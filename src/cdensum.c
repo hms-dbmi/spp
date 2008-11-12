@@ -2,7 +2,7 @@
 #include "Rmath.h"
 #include "Rinternals.h"
 
-#undef DEBUG 1
+//#define DEBUG 1
 
 // dout is npos-length output array.
 // n - number of positions in pos (and length of tc cont array)

@@ -11,7 +11,6 @@
 #include <utility>
 #include <hash_map.h>
 #include <boost/tokenizer.hpp>
-#include <bzlib.h>
 
 extern "C" {
 #include "R.h"
@@ -40,7 +39,7 @@ public:
  * corresponding to the strand.
  */
 
-#undef DEBUG 1
+//#define DEBUG 1
 
 extern "C" {
 SEXP read_bed_ends(SEXP filename) {
@@ -341,43 +340,14 @@ SEXP read_meland_old(SEXP filename) {
   return(ans);
 }
 
-  int get_bzline(BZFILE* b,string& line) {
-    char c;
-    int     nBuf;
-    int bzerror=BZ_OK;
 
-    while(bzerror == BZ_OK)  {  
-      nBuf=BZ2_bzRead(&bzerror, b, &c, 1);
-      if(bzerror==BZ_OK) {
-	if(c=='\n') {
-	  return bzerror;
-	} else {
-	  line+=c;
-	}
-      }
-    }
-    return bzerror;
-  }
-
-  int get_a_line(FILE *f,BZFILE *b,int bz2file,string& line) {
+  int get_a_line(FILE *f,string& line) {
     line="";
-    if(bz2file) {
-      int bzerror=get_bzline(b,line);
-      if(bzerror==BZ_OK) {
-	return(1);
-      } else {
-	if(bzerror!=BZ_STREAM_END) {
-	  cerr<<"encountered BZERROR="<<bzerror<<endl;
-	}
-	return(0);
-      }
+    char cline[1024];
+    if(fgets(cline,1024,f)) {
+      line+=cline;
     } else {
-      char cline[1024];
-      if(fgets(cline,1024,f)) {
-	line+=cline;
-      } else {
-	return(0);
-      }
+      return(0);
     }
   }
 
@@ -411,23 +381,14 @@ SEXP read_meland_old(SEXP filename) {
   
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
-  BZFILE* b;  
-  int bzerror;
+  
+  Rprintf("opened %s\n",fname);
 
-  int bz2file=0;
-  if(strstr(fname,".bz2")) {
-    bz2file=1;
-    b=BZ2_bzReadOpen (&bzerror, f, 0, 0, NULL, 0);
-    if (bzerror != BZ_OK)  { cerr<<"bzerror="<<bzerror<<endl; }
-    Rprintf("opened bzfile %s\n",fname);
-  } else {
-    Rprintf("opened %s\n",fname);
-  }
 
   // read in bed line
   string line;
   int fcount=0;
-  while(get_a_line(f,b,bz2file,line)) {
+  while(get_a_line(f,line)) {
 
 #ifdef DEBUG  
     Rprintf("line: %s\n",line.c_str());
@@ -490,12 +451,7 @@ SEXP read_meland_old(SEXP filename) {
       
     }
   }
-  if(bz2file) {
-    int bzerror;
-    BZ2_bzReadClose( &bzerror, b);
-  } else {
-    fclose(f);
-  }
+  fclose(f);
     
     
 #ifdef DEBUG  
@@ -617,23 +573,13 @@ SEXP read_eland_mismatches(SEXP filename) {
   
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
-  BZFILE* b;  
-  int bzerror;
 
-  int bz2file=0;
-  if(strstr(fname,".bz2")) {
-    bz2file=1;
-    b=BZ2_bzReadOpen (&bzerror, f, 0, 0, NULL, 0);
-    if (bzerror != BZ_OK)  { cerr<<"bzerror="<<bzerror<<endl; }
-    Rprintf("opened bzfile %s\n",fname);
-  } else {
-    Rprintf("opened %s\n",fname);
-  }
+  Rprintf("opened %s\n",fname);
 
   // read in bed line
   string line;
   int fcount=0;
-  while(get_a_line(f,b,bz2file,line)) {
+  while(get_a_line(f,line)) {
 
 #ifdef DEBUG  
     Rprintf("line: %s\n",line.c_str());
@@ -715,12 +661,7 @@ SEXP read_eland_mismatches(SEXP filename) {
       
     }
   }
-  if(bz2file) {
-    int bzerror;
-    BZ2_bzReadClose( &bzerror, b);
-  } else {
-    fclose(f);
-  }
+  fclose(f);
     
     
 #ifdef DEBUG  
@@ -824,23 +765,12 @@ SEXP read_eland_mismatches(SEXP filename) {
   
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
-  BZFILE* b;  
-  int bzerror;
-
-  int bz2file=0;
-  if(strcmp(fname+strlen(fname)-4,".bz2")==0) {
-    bz2file=1;
-    b=BZ2_bzReadOpen (&bzerror, f, 0, 0, NULL, 0);
-    if (bzerror != BZ_OK)  { cerr<<"bzerror="<<bzerror<<endl; }
-    Rprintf("opened bzfile %s\n",fname);
-  } else {
-    Rprintf("opened %s\n",fname);
-  }
+  Rprintf("opened %s\n",fname);
 
   // read in bed line
   string line;
   int fcount=0;
-  while(get_a_line(f,b,bz2file,line)) {
+  while(get_a_line(f,line)) {
 
 #ifdef DEBUG  
     Rprintf("line: %s\n",line.c_str());
@@ -905,12 +835,7 @@ SEXP read_eland_mismatches(SEXP filename) {
       
     }
   }
-  if(bz2file) {
-    int bzerror;
-    BZ2_bzReadClose( &bzerror, b);
-  } else {
-    fclose(f);
-  }
+  fclose(f);
     
     
 #ifdef DEBUG  

@@ -18,7 +18,7 @@ using namespace __gnu_cxx;
  * Calculate all local peaks
  */
 
-#undef DEBUG 1
+//#define DEBUG 1
 
 extern "C" {
   SEXP find_peaks(SEXP x_R,SEXP thr_R,SEXP max_span_R) {
