@@ -765,6 +765,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
+  else {
   Rprintf("opened %s\n",fname);
 
   // read in bed line
@@ -836,14 +837,9 @@ SEXP read_eland_mismatches(SEXP filename) {
     }
   }
   fclose(f);
-    
-    
-#ifdef DEBUG  
+     
   Rprintf("done. read %d fragments\n",fcount);
-#endif
-
-  Rprintf("done. read %d fragments\n",fcount);
-
+  }
     // construct output structures
   SEXP chnames;
   int np=0; // number of protections

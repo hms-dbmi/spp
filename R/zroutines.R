@@ -275,7 +275,7 @@ select.informative.tags <- function(data,binding.characteristics) {
 # tag.wtd - default method.
 #           must specify parameter "whs", which is the half-size of the window used to calculate binding scores
 # tag.lwcc - LWCC method;
-#           must specify osize - a size of the window (similar to whs) used to calculate binding scores
+#           must specify whs - a size of the window (similar to whs) used to calculate binding scores
 #           can specify isize (default=15bp) - size of the internal window that is masked out
 find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked.data=NULL,control.data=NULL,min.dist=200,window.size=4e7,cluster=NULL,debug=T,n.randomizations=3,shuffle.window=1,min.thr=2,topN=NULL, tag.count.whs=100, enrichment.z=2, method=tag.wtd, tec.filter=T,tec.window.size=1e4,tec.z=5, tec=NULL, n.control.samples=1, enrichment.scale.down.control=F, enrichment.background.scales=c(1,5,10), use.randomized.controls=F, ...) {
 
@@ -339,12 +339,13 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
 }
 
 # returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales
-get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=T,quick.calculation=T) {
+get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T) {
   chrl <- names(ftl); names(chrl) <- chrl;
   # calculate background tag ratio
   bg.weight <- sum(unlist(lapply(ftl,length)))/sum(unlist(lapply(btl,length)));
   lapply(chrl,function(chr) {
-    x <- mbs.enrichment.bounds(abs(ftl[[chr]]+tag.shift),abs(btl[[chr]]+tag.shift),fws=fws,bwsl=bwsl,step=step,calculate.upper.bound=T,bg.weight=bg.weight,use.most.informative.scale=use.most.informative.scale,quick.calculation=quick.calculation,alpha=alpha);
+    if(is.null(btl[[chr]])) { bt <- c(); } else { bt <- abs(btl[[chr]]+tag.shift); }
+    x <- mbs.enrichment.bounds(abs(ftl[[chr]]+tag.shift),bt,fws=fws,bwsl=bwsl,step=step,calculate.upper.bound=T,bg.weight=bg.weight,use.most.informative.scale=use.most.informative.scale,quick.calculation=quick.calculation,alpha=alpha);
     # compose profile showing lower bound for enriched, upper bound for depleted regions
     ps <- rep(1,length(x$mle));
     ps[x$lb>1] <- x$lb[x$lb>1];
@@ -742,7 +743,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
         # calculate tag.weight
         #tag.weight <- sum(unlist(lapply(tvl,length)))/sum(unlist(lapply(d,length)));
         tag.weight <- dataset.background.size(tvl)/dataset.background.size(d);
-        cat("tag.weight=",tag.weight," ");
+        #cat("tag.weight=",tag.weight," ");
         return(window.call.mirror.binding(d,min.thr=min.thr, tag.weight=tag.weight,bg.tl=rbg.tl, debug=debug, round.up=T, ...));
         #return(window.call.mirror.binding(d,min.thr=min.thr, method=tag.wtd,wsize=200,bg.tl=control.data,window.size=window.size,debug=T,min.dist=min.dist,cluster=cluster))
       });
@@ -1015,7 +1016,7 @@ tag.block.shuffle <- function(tags,window.size=100) {
 
 
 # calculate window cross-correlation
-lwcc <- function(x,y,s,e,osize=100,isize=20,return.peaks=T,min.thr=1,min.dist=100,step=1,tag.weight=1,bg.x=NULL,bg.y=NULL,bg.weight=NULL,mask.x=NULL,mask.y=NULL,bg.whs=osize,round.up=F) {
+lwcc <- function(x,y,s,e,whs=100,isize=20,return.peaks=T,min.thr=1,min.dist=100,step=1,tag.weight=1,bg.x=NULL,bg.y=NULL,bg.weight=NULL,mask.x=NULL,mask.y=NULL,bg.whs=whs,round.up=F) {
   if(step>1) {
     x <- floor(x/step+0.5); y <- floor(y/step+0.5)
     
@@ -1027,7 +1028,7 @@ lwcc <- function(x,y,s,e,osize=100,isize=20,return.peaks=T,min.thr=1,min.dist=10
       mask.x <- floor(mask.x/step+0.5); mask.y <- floor(mask.y/step+0.5)  
     }
 
-    osize <- floor(osize/step+0.5);
+    whs <- floor(whs/step+0.5);
     bg.whs <- floor(bg.whs/step+0.5);
     isize <- floor(isize/step+0.5);
     min.dist <- floor(min.dist/step +0.5);
@@ -1039,7 +1040,7 @@ lwcc <- function(x,y,s,e,osize=100,isize=20,return.peaks=T,min.thr=1,min.dist=10
   bg.weight <- bg.weight*tag.weight;
 
   
-  rx <- c(s-osize,e+osize);
+  rx <- c(s-whs,e+whs);
   xt <- table(x);
   xh <- integer(diff(rx)+1);
   xh[as.integer(names(xt))-rx[1]+1] <- as.integer(xt);
@@ -1064,7 +1065,7 @@ lwcc <- function(x,y,s,e,osize=100,isize=20,return.peaks=T,min.thr=1,min.dist=10
     rm(bg.yt);
 
     # adjust bg.weight according to bg.whs
-    bg.weight <- bg.weight*(osize-isize)/bg.whs;
+    bg.weight <- bg.weight*(whs-isize)/bg.whs;
   } else {
     bg.subtract <- 0;
     bg.xh <- bg.yh <- c();
@@ -1089,7 +1090,7 @@ lwcc <- function(x,y,s,e,osize=100,isize=20,return.peaks=T,min.thr=1,min.dist=10
   
   storage.mode(xh) <- storage.mode(yh) <- "integer";
   storage.mode(bg.xh) <- storage.mode(bg.yh) <- "integer";
-  nx <- length(xh);   storage.mode(nx) <- storage.mode(osize) <- storage.mode(isize) <- storage.mode(bg.whs) <- "integer";
+  nx <- length(xh);   storage.mode(nx) <- storage.mode(whs) <- storage.mode(isize) <- storage.mode(bg.whs) <- "integer";
   rp <- as.integer(return.peaks);
   storage.mode(rp) <- storage.mode(min.dist) <- "integer";
   storage.mode(min.thr) <- "double";
@@ -1100,7 +1101,7 @@ lwcc <- function(x,y,s,e,osize=100,isize=20,return.peaks=T,min.thr=1,min.dist=10
 
   # allocate return arrays
   #cc <- numeric(nx); storage.mode(cc) <- "double";
-  z <- .Call("lwcc",xh,yh,osize,isize,rp,min.dist,min.thr,tag.weight,bg.subtract,bg.xh,bg.yh,bg.whs,bg.weight,round.up);
+  z <- .Call("lwcc",xh,yh,whs,isize,rp,min.dist,min.thr,tag.weight,bg.subtract,bg.xh,bg.yh,bg.whs,bg.weight,round.up);
   if(return.peaks) {
     return(data.frame(x=(z$x+rx[1])*step,y=z$v));
   } else {
@@ -1178,6 +1179,8 @@ window.call.mirror.binding <- function(tvl,window.size=4e7, debug=T, cluster=NUL
 
 window.chr.call.mirror.binding <- function(ctvl,window.size,debug=T, chr="NA", cluster=NULL, method=tag.wtd, bg.ctv=NULL, mask.ctv=NULL, ...) {
   ctv <- ctvl$ctv; bg.ctv <- ctvl$bg.ctv; mask.ctv <- ctvl$mask.ctv;
+  if(is.null(ctv)) { return(data.frame(x=c(),y=c())) }
+  if(length(ctv)<2) { return(data.frame(x=c(),y=c())) }
   
   dr <- range(unlist(lapply(ctv,function(x) range(abs(x)))))
   n.windows <- ceiling(diff(dr)/window.size);
@@ -1264,7 +1267,7 @@ determine.lwcc.threshold <- function(tvl,chrl=names(tvl),e.value=100, n.randomiz
       rl <- window.call.mirror.binding(rt,min.thr=min.thr, debug=F, ...);
       
       return(do.call(rbind,rl))
-      #return(do.call(rbind,window.call.mirror.binding(rt,min.thr=min.thr, debug=F, osize=100,isize=10,window.size=3e7,min.dist=200)))
+      #return(do.call(rbind,window.call.mirror.binding(rt,min.thr=min.thr, debug=F, whs=100,isize=10,window.size=3e7,min.dist=200)))
     })));
 
   } else {
@@ -1395,6 +1398,7 @@ filter.binding.sites <- function(bd,tec,exclude=F) {
   chrl <- names(bd); names(chrl) <- chrl;
   lapply(chrl,function(chr) {
     cbd <- bd[[chr]];
+    if(is.null(cbd)) { return(NULL) };
     if(dim(cbd)[1]>0) {
       ctec <- tec[[chr]];
       if(length(ctec$s)>0) {
@@ -1869,7 +1873,7 @@ filter.singular.positions.by.local.density <- function(tags,window.size=200,cap.
 mbs.enrichment.bounds <- function(ft,bt,fws,bwsl,ttcs=NULL,step=1,rng=NULL,alpha=0.05,calculate.upper.bound=F,bg.weight=length(ft)/length(bt),use.most.informative.scale=F,quick.calculation=F) {
   # determine range
   if(is.null(rng)) {
-    rng <- range(range(ft),range(bt));
+    rng <- range(range(ft));
   }
   # foreground counts
   fwc <- window.tag.count(ft,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
@@ -1979,7 +1983,6 @@ mbs.enrichment.bounds <- function(ft,bt,fws,bwsl,ttcs=NULL,step=1,rng=NULL,alpha
     return(rl);
   }
 }
-
 
 write.probe.wig <- function(chr,pos,val,fname,append=F,feature="M",probe.length=35,header=T) {
   min.dist <- min(diff(pos));
