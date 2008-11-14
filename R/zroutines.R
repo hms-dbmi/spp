@@ -120,10 +120,17 @@ remove.tag.anomalies <- function(data, bin=1,trim.fraction=1e-3,z=5,zo=3*z) {
   return(data);
 }
 
+# caps or removes tag positions that are significantly higher than local background
+remove.local.tag.anomalies <- function(tags,window.size=200,eliminate.fold=10,cap.fold=4,z.threshold=3) {
+  lapply(tags,filter.singular.positions.by.local.density,window.size=2e2,eliminate.fold=10,cap.fold=4,z.threshold=3);
+}
+
+
 
 # assess strand cross-correlation, determine peak position, determine appropriate window size
 # for binding detection.
-get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL,debug=F,min.tag.count=1e3,acceptance.z.score=3) {
+get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL,debug=F,min.tag.count=1e3,acceptance.z.score=3,remove.tag.anomalies=T,anomalies.z=5) {
+  data <- remove.tag.anomalies(data,z=anomalies.z);
   # take highest quality tag bin
   if(!is.null(data$quality)) {
     min.bin <- min(unlist(lapply(data$quality,min)))
@@ -225,7 +232,6 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
 }
 
 
-
 # select a set of informative tags based on the pre-calculated binding characteristics
 select.informative.tags <- function(data,binding.characteristics) {
   if(is.null(binding.characteristics$quality.bin.acceptance)) {
@@ -305,6 +311,68 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
   prd <- calculate.enrichment.estimates(prd,signal.data,control.data=control.data,fraction=1,tag.count.whs=tag.count.whs,z=enrichment.z,scale.down.control=enrichment.scale.down.control,background.scales=enrichment.background.scales);
 
   return(prd);
+}
+
+
+
+# -------- ROUTINES FOR WRITING OUT TAG DENSITY AND ENRICHMENT PROFILES  ------------
+# calculate smoothed tag density, optionally subtracting the background
+get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3)) {
+  chrl <- names(signal.tags); names(chrl) <- chrl;
+
+  if(!is.null(control.tags)) {
+    bg.weight <- dataset.background.size(signal.tags)/dataset.background.size(control.tags);
+  }
+  
+  lapply(chrl,function(chr) {
+    ad <- abs(signal.tags[[chr]]+tag.shift);
+    rng <- range(ad);
+    ds <- densum(ad,bw=bandwidth,from=rng[1],to=rng[2],return.x=T,step=step);
+    if(!is.null(control.tags)) {
+      if(!is.null(control.tags[[chr]])) {
+        bsd <- densum(abs(control.tags[[chr]]+tag.shift),bw=bandwidth,from=rng[1],to=rng[2],return.x=F,step=step);
+        ds$y <- ds$y-bsd*bg.weight;
+      }
+    }
+    return(data.frame(x=seq(ds$x[1],ds$x[2],by=step),y=ds$y))
+  })
+}
+
+# returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales
+get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=T,quick.calculation=T) {
+  chrl <- names(ftl); names(chrl) <- chrl;
+  # calculate background tag ratio
+  bg.weight <- sum(unlist(lapply(ftl,length)))/sum(unlist(lapply(btl,length)));
+  lapply(chrl,function(chr) {
+    x <- mbs.enrichment.bounds(abs(ftl[[chr]]+tag.shift),abs(btl[[chr]]+tag.shift),fws=fws,bwsl=bwsl,step=step,calculate.upper.bound=T,bg.weight=bg.weight,use.most.informative.scale=use.most.informative.scale,quick.calculation=quick.calculation,alpha=alpha);
+    # compose profile showing lower bound for enriched, upper bound for depleted regions
+    ps <- rep(1,length(x$mle));
+    ps[x$lb>1] <- x$lb[x$lb>1];
+    ps[x$ub<1] <- x$ub[x$ub<1];
+    ps <- log2(ps);
+    return(data.frame(x=seq(x$x$s,x$x$e,by=x$x$step),y=ps));
+  })
+}
+
+
+# write a per-chromosome $x/$y data structure into a wig file
+writewig <- function(dat,fname,feature,threshold=5,zip=F) {
+  chrl <- names(dat); names(chrl) <- chrl;
+  invisible(lapply(chrl,function(chr) {
+    bdiff <- dat[[chr]];
+    ind <- seq(1,length(bdiff$x));
+    ind <- ind[!is.na(bdiff$y[ind])];
+    header <- chr==chrl[1];
+    write.probe.wig(chr,bdiff$x[ind],bdiff$y[ind],fname,append=!header,feature=feature,header=header);
+  }))
+  if(zip) {
+    zf <- paste(fname,"zip",sep=".");
+    system(paste("zip",zf,fname));
+    system(paste("rm",fname));
+    return(zf);
+  } else {
+    return(fname);
+  }
 }
 
 
@@ -1681,7 +1749,6 @@ dataset.background.size <- function(tl,min.tag.count.p=1e-5,wsize=1e3,mcs=0) {
 
 
 
-
 # calculate cumulative density based on sum of scaled gaussian curves
 # (by Michael Tolstorukov)
 #
@@ -1704,19 +1771,229 @@ densum <- function(vin,bw=5,dw=3,match.wt.f=NULL,return.x=T,from=min(vin),to=max
   if(rng[1]<0) { stop("range extends into negative values") }
   if(range(pos)[1]<0) { stop("position vector contains negative values") }
 
-  storage.mode(n) <- storage.mode(rng) <- storage.mode(bw) <- storage.mode(dw) <- "integer";
+  storage.mode(n) <- storage.mode(rng) <- storage.mode(bw) <- storage.mode(dw) <- storage.mode(step) <- "integer";
   
   spos <- rng[1]; storage.mode(spos) <- "double";
 
-  dlength <- (rng[2] - rng[1]) + 1; # length of output array
+  dlength <- floor((rng[2] - rng[1])/step) + 1; # length of output array
   if(dlength<1) { stop("zero data range") }
   dout <- numeric(dlength); storage.mode(dout) <- "double";
   storage.mode(dlength) <- "integer";
-  .C("cdensum",n,pos,tc,spos,bw,dw,dlength,dout,DUP=F);
+  .C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout,DUP=F);
   
   if(return.x) {
-    return(list(x=c(rng[1],rng[2]),y=dout,step=step))
+    return(list(x=c(rng[1],rng[1]+step*(dlength-1)),y=dout,step=step))
   } else {
     return(dout)
   }
-}                                                                                                                                                              
+}
+
+# count tags within sliding window of a specified size
+# vin - tag vector (postive values, pre-shifted)
+# window.size/window.step - window characteristics
+# tv - optional, pre-sorted, pre-trimmed tag vector
+window.tag.count <- function(vin,window.size,window.step=1,return.x=T,from=min(vin)+floor(window.size/2),to=max(vin)-floor(window.size/2),tv=NULL) {
+  whs <- floor(window.size/2);
+  # select tags with margins
+  if(is.null(tv)) {
+    tv <- sort(vin[vin>=from-whs-1 & vin<=to+whs+1])
+  }
+  storage.mode(tv) <- "double";
+  n <- length(tv)
+  nsteps <- ceiling((to-from)/window.step);
+  
+  storage.mode(n) <- storage.mode(nsteps) <- storage.mode(window.size) <- storage.mode(window.step) <- "integer";
+  
+  spos <- from; storage.mode(spos) <- "double";
+
+  if(nsteps<1) { stop("zero data range") }
+  #dout <- integer(nsteps); storage.mode(dout) <- "integer";
+  #.C("window_n_tags",n,tv,spos,window.size,window.step,nsteps,dout,DUP=F);
+  dout <- .Call("cwindow_n_tags",tv,spos,window.size,window.step,nsteps);
+  
+  if(return.x) {
+    return(list(x=c(from,from+(nsteps-1)*window.step),y=dout,step=window.step))
+  } else {
+    return(dout)
+  }
+}
+
+
+# given a tag vector (signed), identify and clean up (either remove or cap) singular positions that exceed local tag density
+# vin - tag vector
+# cap.fold - maximal fold over enrichment over local density allowed for a single tag position, at which the tag count is capped
+# eliminate.fold - max fold enrichment that, when exceeded, results in exclusion of all the tags at that position (e.g. counted as anomaly)
+# z.threshold - Z-score used to determine max allowed counts
+filter.singular.positions.by.local.density <- function(tags,window.size=200,cap.fold=4,eliminate.fold=10,z.threshold=3) {
+  # tabulate tag positions
+  if(length(tags)<2) { return(tags); };
+  
+  tc <- table(tags);
+  pos <- as.numeric(names(tc)); storage.mode(pos) <- "double";
+  tc <- as.integer(tc); storage.mode(tc) <- "integer";
+  n <- length(pos); 
+
+  whs <- floor(window.size/2);
+  
+  storage.mode(n) <- storage.mode(whs) <- "integer";
+  twc <- .Call("cwindow_n_tags_around",pos,tc,pos,whs);
+  twc <- (twc-tc+1)/window.size; # local density
+
+  pv <- pnorm(z.threshold,lower.tail=F)
+  # exclude
+  max.counts <- qpois(pv,twc*eliminate.fold,lower.tail=F)
+  tc[tc>max.counts] <- 0;
+  # cap
+  max.counts <- qpois(pv,twc*cap.fold,lower.tail=F)
+  ivi <- which(tc>max.counts);
+  tc[ivi] <- max.counts[ivi]+1;
+
+  # reconstruct tag vector
+  tv <- rep(pos,tc);
+  to <- order(abs(tv)); tv <- tv[to];
+  return(tv);
+}
+
+
+
+# calculates enrichment bounds using multiple background scales
+# ft - foreground tags (pre-shifted, positive)
+# bt - background tags
+# fws - foreground window size
+# bwsl - background window size list
+# ttcs - a vector with two elements, first giving total tag count, second total sequence size for global scale
+# step - window step
+# rng - from/to coordinates (to will be adjusted according to step)
+#
+# returns: a list with $x ($s $e $step), $lb vector and $mle vector ($ub if calculate.upper.bound=T)
+mbs.enrichment.bounds <- function(ft,bt,fws,bwsl,ttcs=NULL,step=1,rng=NULL,alpha=0.05,calculate.upper.bound=F,bg.weight=length(ft)/length(bt),use.most.informative.scale=F,quick.calculation=F) {
+  # determine range
+  if(is.null(rng)) {
+    rng <- range(range(ft),range(bt));
+  }
+  # foreground counts
+  fwc <- window.tag.count(ft,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
+  fwc$y <- fwc$y+0.5;
+
+  zal <- qnorm(alpha/2,lower.tail=F);
+
+  # background counts
+  bt <- sort(bt);
+  bgcm <- lapply(bwsl,function(bgws) {
+    window.tag.count(bt,bgws,window.step=step,from=rng[1],to=rng[2],return.x=F,tv=bt)+0.5;
+  })
+
+  # pick most informative scale
+  if(use.most.informative.scale) {
+    bgcm <- t(do.call(cbind,bgcm))
+    isi <- max.col(t((bgcm)/(bwsl/fws))) # add pseudo-counts to select lowest scale in case of a tie
+
+    bgc <- c(bgcm)[isi+dim(bgcm)[1]*(c(1:length(isi))-1)]
+
+    if(quick.calculation) {
+      rte <- fwc$y+bgc-0.25*zal*zal; rte[rte<0] <- 0;
+      dn <- bgc - 0.25*zal*zal;
+      lbm=(sqrt(fwc$y*bgc) - 0.5*zal*sqrt(rte))/dn;
+      ivi <- which(lbm<0);
+      lbm <- lbm*lbm*bwsl[isi]/fws/bg.weight;
+      lbm[rte<=0] <- 1;
+      lbm[dn<=0] <- 1;
+      lbm[ivi] <- 1;
+    } else {
+      lbm <- (fwc$y/bgc)*qf(1-alpha/2,2*fwc$y,2*bgc,lower.tail=F)*bwsl[isi]/fws/bg.weight;
+    }
+    
+    mle <- fwc$y/bgc*bwsl[isi]/fws/bg.weight; mle[is.nan(mle)] <- Inf; mle[is.na(mle)] <- Inf;
+    
+    rl <- list(x=list(s=fwc$x[1],e=fwc$x[2],step=fwc$step),lb=lbm,mle=mle);
+    
+    if(calculate.upper.bound) {
+      isi <- max.col(t((-bgcm)/(bwsl/fws))) # add pseudo-counts to select highest scale in case of a tie
+      bgc <- c(bgcm)[isi+dim(bgcm)[1]*(c(1:length(isi))-1)]
+
+      if(quick.calculation) {
+        ubm=(sqrt(fwc$y*bgc) + 0.5*zal*sqrt(rte))/dn;
+        ivi <- which(ubm<0);
+        ubm <- ubm*ubm*bwsl[isi]/fws/bg.weight;
+        ubm[rte<=0] <- 1;
+        ubm[ivi] <- 1;
+        lbm[dn<=0] <- 1;
+      } else {
+        ubm <- (fwc$y/bgc)*qf(alpha/2,2*fwc$y,2*bgc,lower.tail=F)*bwsl[isi]/fws/bg.weight;
+      }
+      rl <- c(rl,list(ub=ubm));
+    }
+    return(rl);
+    
+  } else {
+    # determine lower bounds
+    lbm <- lapply(c(1:length(bgcm)),function(i) {
+      nbg <- bgcm[[i]];
+      if(quick.calculation) {
+        rte <- fwc$y+nbg-0.25*zal*zal; rte[rte<0] <- 0;
+        dn <- (nbg - 0.25*zal*zal);
+        lbm=(sqrt(fwc$y*nbg) - 0.5*zal*sqrt(rte))/dn;
+        ivi <- which(lbm<0);  
+        lbm <- lbm*lbm*bwsl[i]/fws/bg.weight;
+        lbm[rte<=0] <- 1;
+        lbm[dn<=0] <- 1;
+        lbm[ivi] <- 1;
+        return(lbm);
+      } else {
+        return((fwc$y/nbg)*qf(1-alpha/2,2*fwc$y,2*nbg,lower.tail=F)*bwsl[i]/fws/bg.weight);
+      }
+    })
+    lbm <- do.call(pmin,lbm);
+
+    # calculate mle
+    #mle <- do.call(pmin,lapply(bgcm,function(bgc) fwc/bgc))
+    mle <- do.call(pmin,lapply(c(1:length(bgcm)),function(i) {
+      bgc <- bgcm[[i]];
+      x <- fwc$y/bgc*bwsl[i]/fws/bg.weight; x[is.nan(x)] <- Inf; x[is.na(x)] <- Inf; return(x);
+    }))
+
+    rl <- list(x=list(s=fwc$x[1],e=fwc$x[2],step=fwc$step),lb=lbm,mle=mle);
+    
+    if(calculate.upper.bound) {
+      # determine upper bound
+      ubm <- lapply(c(1:length(bgcm)),function(i) {
+        nbg <- bgcm[[i]];
+        if(quick.calculation) {
+          rte <- fwc$y+nbg-0.25*zal*zal; rte[rte<0] <- 0;
+          dn <- (nbg - 0.25*zal*zal);
+          ubm=(sqrt(fwc$y*nbg) + 0.5*zal*sqrt(rte))/dn;
+          ivi <- which(ubm<0);  
+          ubm <- ubm*ubm*bwsl[i]/fws/bg.weight;
+          ubm[rte<=0] <- 1;
+          ubm[dn<=0] <- 1;
+          ubm[ivi] <- 1;
+          return(ubm);
+        } else {
+          return((fwc$y/nbg)*qf(alpha/2,2*fwc$y,2*nbg,lower.tail=F)*bwsl[i]/fws/bg.weight);
+        }
+      })
+      ubm <- do.call(pmax,ubm);
+      rl <- c(rl,list(ub=ubm));
+    }
+
+    return(rl);
+  }
+}
+
+
+write.probe.wig <- function(chr,pos,val,fname,append=F,feature="M",probe.length=35,header=T) {
+  min.dist <- min(diff(pos));
+  if(probe.length>=min.dist) {
+    probe.length <- min.dist-1;
+    cat("warning: adjusted down wig segment length to",probe.length,"\n");
+  }
+  mdat <- data.frame(chr,as.integer(pos),as.integer(pos+probe.length),val)
+
+  if(header) {
+    write(paste("track type=wiggle_0 name=\"Bed Format\" description=\"",feature,"\" visibility=dense color=200,100,0 altColor=0,100,200 priority=20",sep=""),file=fname,append=append)
+    write.table(mdat,file=fname,col.names=F,row.names=F,quote=F,sep=" ",append=T);
+  } else {
+    write.table(mdat,file=fname,col.names=F,row.names=F,quote=F,sep=" ",append=append);
+  }
+  
+}
