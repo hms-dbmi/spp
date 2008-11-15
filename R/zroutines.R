@@ -7,9 +7,9 @@
 
 # -------- ROUTINES FOR READING IN THE DATA FILES ------------
 # fix.chromosome.names : remove ".fa" suffix from match sequence names
-read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
+read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max.eland.tag.length=-1) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_eland",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_eland",filename,rtn,max.eland.tag.length),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -275,9 +275,9 @@ select.informative.tags <- function(data,binding.characteristics) {
 # tag.wtd - default method.
 #           must specify parameter "whs", which is the half-size of the window used to calculate binding scores
 # tag.lwcc - LWCC method;
-#           must specify whs - a size of the window (similar to whs) used to calculate binding scores
+#           must specify whs - a size of the window used to calculate binding scores
 #           can specify isize (default=15bp) - size of the internal window that is masked out
-find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked.data=NULL,control.data=NULL,min.dist=200,window.size=4e7,cluster=NULL,debug=T,n.randomizations=3,shuffle.window=1,min.thr=2,topN=NULL, tag.count.whs=100, enrichment.z=2, method=tag.wtd, tec.filter=T,tec.window.size=1e4,tec.z=5, tec=NULL, n.control.samples=1, enrichment.scale.down.control=F, enrichment.background.scales=c(1,5,10), use.randomized.controls=F, ...) {
+find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked.data=NULL,control.data=NULL,whs=200,min.dist=200,window.size=4e7,cluster=NULL,debug=T,n.randomizations=3,shuffle.window=1,min.thr=2,topN=NULL, tag.count.whs=100, enrichment.z=2, method=tag.wtd, tec.filter=T,tec.window.size=1e4,tec.z=5, tec=NULL, n.control.samples=1, enrichment.scale.down.control=F, enrichment.background.scales=c(1,5,10), use.randomized.controls=F, ...) {
 
   if(f<1) {
     if(debug) { cat("subsampling signal ... "); }
@@ -292,7 +292,7 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
     control <- NULL;
   }
   
-  prd <- lwcc.prediction(signal.data,min.dist=min.dist,window.size=window.size,e.value=e.value,fdr=fdr,debug=debug,n.randomizations=n.randomizations,shuffle.window=shuffle.window,min.thr=min.thr,cluster=cluster,method=method,bg.tl=control.data,mask.tl=masked.data, topN=topN, control=control,tec.filter=tec.filter,tec.z=tec.z,tec.window.size=tec.window.size, ...);
+  prd <- lwcc.prediction(signal.data,min.dist=min.dist,whs=whs,window.size=window.size,e.value=e.value,fdr=fdr,debug=debug,n.randomizations=n.randomizations,shuffle.window=shuffle.window,min.thr=min.thr,cluster=cluster,method=method,bg.tl=control.data,mask.tl=masked.data, topN=topN, control=control,tec.filter=tec.filter,tec.z=tec.z,tec.window.size=tec.window.size, ...);
 
   # add tag counts
   chrl <- names(prd$npl); names(chrl) <- chrl;
@@ -407,11 +407,11 @@ get.mser <- function(signal.data,control.data,n.chains=5,step.size=1e5, chains=N
 
 # PUBLIC 
 # interpolate MSER dependency on tag counts
-get.mser.interpolation <- function(signal.data,control.data,target.fold.enrichment=5,n.chains=10,n.steps=6,step.size=1e5, chains=NULL,  test.agreement=0.99, return.chains=F, enrichment.background.scales=c(1), plot=T, excluded.steps=c(seq(2,n.steps-2)), ...) {
+get.mser.interpolation <- function(signal.data,control.data,target.fold.enrichment=5,n.chains=10,n.steps=6,step.size=1e5, chains=NULL,  test.agreement=0.99, return.chains=F, enrichment.background.scales=c(1), excluded.steps=c(seq(2,n.steps-2)), ...) {
   msers <- get.mser(signal.data,control.data,n.chains=n.chains,n.steps=n.steps,step.size=step.size,chains=chains,test.agrement=test.agreement,return.chains=T,enrichment.background.scales=enrichment.background.scales,excluded.steps=excluded.steps, ...);
 
   # adjust sizes in case a subset of chromosomes was used
-  mser <- mser.chain.interpolation(chains=msers$chains,enrichment.background.scales=c(1),test.agreement=test.agreement,return.lists=T);
+  mser <- mser.chain.interpolation(chains=msers$chains,enrichment.background.scales=enrichment.background.scales,test.agreement=test.agreement,return.lists=T);
   sr <- sum(unlist(lapply(signal.data,length)))/mser[[1]][[1]]$n[1];
     
   intpn <- lapply(mser,function(ms) {
@@ -437,19 +437,6 @@ get.mser.interpolation <- function(signal.data,control.data,target.fold.enrichme
   }
   
   return(msers);
-  msers$mser
-  unlist(lapply(msers$chains[[3]],function(d) sum(unlist(lapply(d$npl,function(x) length(x$x))))))
-  #unlist(lapply(chains[[4]],function(d) sum(unlist(lapply(d$npl,function(x) length(x$x))))))
-  
-     
-
-  mser <- mser.chain.interpolation(chains=msers$chains,enrichment.background.scales=c(1),test.agreement=test.agreement,return.lists=F);
-  mser
-
-  #mser <- mser.chain.interpolation(chains=chains,enrichment.background.scales=c(1),test.agreement=test.agreement,return.lists=T);
-  ms <- mser[[1]]
-  
-  names(mser[[1]])
  
 }
 
@@ -701,7 +688,7 @@ tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=50,bg.
 # return.rtp - return randomized tag peaks - do not fit thresholds or do actual predictions
 # topN - use min threshold to do a run, return topN peaks from entire genome
 # threshold - specify a user-defined threshold
-lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr=2, n.randomizations=1, shuffle.window=1, debug=T, predict.on.random=F, shuffle.both.strands=T,strand.shuffle.only=F, return.rtp=F, control=NULL, print.level=0, threshold=NULL, topN=NULL, bg.tl=NULL, tec.filter=T, tec.window.size=1e3,tec.z=3, bg.reverse=T, return.control.predictions=F, return.core.data=F, ... ) {
+lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr=0, n.randomizations=1, shuffle.window=1, debug=T, predict.on.random=F, shuffle.both.strands=T,strand.shuffle.only=F, return.rtp=F, control=NULL, print.level=0, threshold=NULL, topN=NULL, bg.tl=NULL, tec.filter=T, tec.window.size=1e3,tec.z=3, bg.reverse=T, return.control.predictions=F, return.core.data=F, ... ) {
 
   control.predictions <- NULL;
   core.data <- list();

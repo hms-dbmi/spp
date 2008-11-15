@@ -737,13 +737,14 @@ SEXP read_eland_mismatches(SEXP filename) {
 
 
   // read in regular eland files, adjusting the negative strand coordinate by sequence length
-  SEXP read_eland(SEXP filename,SEXP read_tag_names_R) {
+  SEXP read_eland(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_R) {
 
 #ifdef DEBUG  
   Rprintf("start\n");
 #endif
   const char* fname=CHAR(asChar(filename));
   int read_names=*(INTEGER(read_tag_names_R));
+  int eland_tag_length=*(INTEGER(eland_tag_length_R));
 #ifdef DEBUG  
   Rprintf("fname=%s\n",fname);
 #endif
@@ -784,6 +785,10 @@ SEXP read_eland_mismatches(SEXP filename) {
       string tagname=*sit++;
       string sequence=*sit++;
       int len=sequence.size();
+      // adjust probe length if eland length limit was specified
+      if(eland_tag_length>0 && len>eland_tag_length) {
+	len=eland_tag_length;
+      }
       string str_nm=*sit++;
       int nm=0;
       if(str_nm[0]=='U') {
