@@ -9,6 +9,7 @@
 # fix.chromosome.names : remove ".fa" suffix from match sequence names
 read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max.eland.tag.length=-1) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
+  storage.mode(max.eland.tag.length) <- "integer";
   tl <- lapply(.Call("read_eland",filename,rtn,max.eland.tag.length),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];

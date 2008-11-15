@@ -346,6 +346,7 @@ SEXP read_meland_old(SEXP filename) {
     char cline[1024];
     if(fgets(cline,1024,f)) {
       line+=cline;
+      return(1);
     } else {
       return(0);
     }
