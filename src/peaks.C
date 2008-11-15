@@ -479,34 +479,6 @@ extern "C" {
   }
 
 
-  SEXP write_wig_file(SEXP chr_R,SEXP s_R,SEXP e_R,SEXP v_R,SEXP header_R,SEXP file_R,SEXP append_R) {
-
-#ifdef DEBUG  
-    Rprintf("start\n");
-#endif
-    int* s=INTEGER(s_R);
-    int* e=INTEGER(e_R);
-    const char *file=CHAR(file_R);
-    const char *header=CHAR(header_R);
-    double* v=REAL(v_R);
-    int n=LENGTH(s_R);
-    int append=*INTEGER(append_R);
-    
-#ifdef DEBUG  
-    Rprintf("n=%d; append=%d\n",n,append);
-#endif
-    // open file
-    if(strlen(file)>0) {
-      // output header
-    }
-
-    for(int i=0;i<n;i++) {
-    }
-
-    vector<double> dist;
-    
-
-  }
 
 
   // given a list of sorted chromosome signal and background vectors (unscaled), determine 
