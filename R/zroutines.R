@@ -572,12 +572,13 @@ t.plotcc <- function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag", pch=19, 
   # plot chromosome-acerage cross-correlation 
   t.plotavcc <- function(ci, main=paste(ci,"chromosome average"), ccl=tl.cc, return.ac=F, ttl=tl, plot=T, ... ) {
     cc <- ccl[[ci]];
-    cc$M <- NULL;
+    if(length(cc)==1)  { return(cc[[1]]) };
+    if(length(cc)==0) { return(c()) };
     ac <- do.call(rbind,cc);
     # omit NA chromosomes
     ina <- apply(ac,1,function(d) any(is.na(d)));
 
-    tags <- ttl[[ci]]; tags$M <- NULL;
+    tags <- ttl[[ci]]; 
     avw <- unlist(lapply(tags,length));    avw <- avw/sum(avw);    
     ac <- ac[!ina,]; avw <- avw[!ina];
     ac <- apply(ac,2,function(x) sum(x*avw));
@@ -590,14 +591,14 @@ t.plotcc <- function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag", pch=19, 
 
   t.plotchrcc <- function(ci,ncol=4, ccl=tl.cc, ... ) {
     cc <- ccl[[ci]];
-    cc$M <- NULL;
     ac <- do.call(rbind,cc);
     par(mfrow = c(length(cc)/ncol,ncol), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.8)
     lapply(names(cc),function(ch) { t.plotcc(cc[[ch]],main=paste(ci,": chr",ch,sep=""), ...) })
   }
 
   t.plotavccl <- function(ci, ccl=tl.ccl, main=paste(ci,"chromosome average"), rtl=tl, ... ) {
-    cc <- lapply(ccl[[ci]],function(x) { if(!is.null(x$M)) { x$M <- NULL;}; return(x); });     
+    #cc <- lapply(ccl[[ci]],function(x) { if(!is.null(x$M)) { x$M <- NULL;}; return(x); });
+    cc <- ccl[[ci]];
     chrs <- names(cc[[1]]); names(chrs) <- chrs;
     acl <- lapply(cc,function(x) do.call(rbind,x));
     tags <- rtl[[ci]][chrs]; 
@@ -785,6 +786,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
 
     # determine actual thresholds
     if(is.null(e.value)) {
+      if(is.null(fdr)) { fdr <- 0.01; }
       thr <- list(root=min(npld$y[npld$fdr<=fdr]),type="FDR",fdr=fdr)
       if(debug) { cat("FDR",fdr,"threshold=",thr$root,"\n");  }
     } else {

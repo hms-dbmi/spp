@@ -804,7 +804,7 @@ SEXP read_eland_mismatches(SEXP filename) {
       string str_strand=*sit++;
 
       if(str_strand[0]=='R') {
-	fpos=-1*(fpos+len);
+	fpos=-1*(fpos+len-1);
       }
       
       // determine the chromosome index
