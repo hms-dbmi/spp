@@ -278,7 +278,7 @@ select.informative.tags <- function(data,binding.characteristics) {
 # tag.lwcc - LWCC method;
 #           must specify whs - a size of the window used to calculate binding scores
 #           can specify isize (default=15bp) - size of the internal window that is masked out
-find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked.data=NULL,control.data=NULL,whs=200,min.dist=200,window.size=4e7,cluster=NULL,debug=T,n.randomizations=3,shuffle.window=1,min.thr=2,topN=NULL, tag.count.whs=100, enrichment.z=2, method=tag.wtd, tec.filter=T,tec.window.size=1e4,tec.z=5, tec=NULL, n.control.samples=1, enrichment.scale.down.control=F, enrichment.background.scales=c(1,5,10), use.randomized.controls=F, ...) {
+find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked.data=NULL,control.data=NULL,whs=200,min.dist=200,window.size=4e7,cluster=NULL,debug=T,n.randomizations=3,shuffle.window=1,min.thr=2,topN=NULL, tag.count.whs=100, enrichment.z=2, method=tag.wtd, tec.filter=T,tec.window.size=1e4,tec.z=5, tec=NULL, n.control.samples=1, enrichment.scale.down.control=F, enrichment.background.scales=c(1,5,10), use.randomized.controls=F, background.density.scaling=T, ...) {
 
   if(f<1) {
     if(debug) { cat("subsampling signal ... "); }
@@ -293,7 +293,7 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
     control <- NULL;
   }
   
-  prd <- lwcc.prediction(signal.data,min.dist=min.dist,whs=whs,window.size=window.size,e.value=e.value,fdr=fdr,debug=debug,n.randomizations=n.randomizations,shuffle.window=shuffle.window,min.thr=min.thr,cluster=cluster,method=method,bg.tl=control.data,mask.tl=masked.data, topN=topN, control=control,tec.filter=tec.filter,tec.z=tec.z,tec.window.size=tec.window.size, ...);
+  prd <- lwcc.prediction(signal.data,min.dist=min.dist,whs=whs,window.size=window.size,e.value=e.value,fdr=fdr,debug=debug,n.randomizations=n.randomizations,shuffle.window=shuffle.window,min.thr=min.thr,cluster=cluster,method=method,bg.tl=control.data,mask.tl=masked.data, topN=topN, control=control,tec.filter=tec.filter,tec.z=tec.z,tec.window.size=tec.window.size, background.density.scaling=background.density.scaling, ...);
 
   # add tag counts
   chrl <- names(prd$npl); names(chrl) <- chrl;
@@ -318,11 +318,11 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
 
 # -------- ROUTINES FOR WRITING OUT TAG DENSITY AND ENRICHMENT PROFILES  ------------
 # calculate smoothed tag density, optionally subtracting the background
-get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3)) {
+get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3),background.density.scaling=T) {
   chrl <- names(signal.tags); names(chrl) <- chrl;
 
   if(!is.null(control.tags)) {
-    bg.weight <- dataset.background.size(signal.tags)/dataset.background.size(control.tags);
+    bg.weight <- dataset.density.ratio(signal.tags,control.tags,background.density.scaling=background.density.scaling);
   }
   
   lapply(chrl,function(chr) {
@@ -340,10 +340,10 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
 }
 
 # returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales
-get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T) {
+get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T,background.density.scaling=T) {
   chrl <- names(ftl); names(chrl) <- chrl;
   # calculate background tag ratio
-  bg.weight <- sum(unlist(lapply(ftl,length)))/sum(unlist(lapply(btl,length)));
+  bg.weight <- dataset.density.ratio(ftl,btl,background.density.scaling=background.density.scaling);
   lapply(chrl,function(chr) {
     if(is.null(btl[[chr]])) { bt <- c(); } else { bt <- abs(btl[[chr]]+tag.shift); }
     x <- mbs.enrichment.bounds(abs(ftl[[chr]]+tag.shift),bt,fws=fws,bwsl=bwsl,step=step,calculate.upper.bound=T,bg.weight=bg.weight,use.most.informative.scale=use.most.informative.scale,quick.calculation=quick.calculation,alpha=alpha);
@@ -627,12 +627,9 @@ show.scc <- function(tl,srange,cluster=NULL) {
 }
 
 # find regions of significant tag enrichment
-find.significantly.enriched.regions <- function(signal.data,control.data,window.size=500,multiplier=1,z.thr=3,mcs=0,debug=F,plain.size.scaling=F) {
-  if(plain.size.scaling) {
-    bg.weight <- sum(unlist(lapply(signal.data,length)))/sum(unlist(lapply(control.data,length)))
-  } else {
-    bg.weight <- dataset.background.size(signal.data)/dataset.background.size(control.data);
-  }
+find.significantly.enriched.regions <- function(signal.data,control.data,window.size=500,multiplier=1,z.thr=3,mcs=0,debug=F,background.density.scaling=T) {
+  bg.weight <- dataset.density.ratio(signal.data,control.data,background.density.scaling=background.density.scaling);
+
   if(debug) {
     cat("bg.weight=",bg.weight,"\n");
   }
@@ -690,7 +687,7 @@ tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=50,bg.
 # return.rtp - return randomized tag peaks - do not fit thresholds or do actual predictions
 # topN - use min threshold to do a run, return topN peaks from entire genome
 # threshold - specify a user-defined threshold
-lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr=0, n.randomizations=1, shuffle.window=1, debug=T, predict.on.random=F, shuffle.both.strands=T,strand.shuffle.only=F, return.rtp=F, control=NULL, print.level=0, threshold=NULL, topN=NULL, bg.tl=NULL, tec.filter=T, tec.window.size=1e3,tec.z=3, bg.reverse=T, return.control.predictions=F, return.core.data=F, ... ) {
+lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr=0, n.randomizations=1, shuffle.window=1, debug=T, predict.on.random=F, shuffle.both.strands=T,strand.shuffle.only=F, return.rtp=F, control=NULL, print.level=0, threshold=NULL, topN=NULL, bg.tl=NULL, tec.filter=T, tec.window.size=1e3,tec.z=3, bg.reverse=T, return.control.predictions=F, return.core.data=F, background.density.scaling=T, ... ) {
 
   control.predictions <- NULL;
   core.data <- list();
@@ -731,9 +728,9 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
       rtp <- lapply(control,function(d) {
         # calculate tag.weight
         #tag.weight <- sum(unlist(lapply(tvl,length)))/sum(unlist(lapply(d,length)));
-        tag.weight <- dataset.background.size(tvl)/dataset.background.size(d);
+        tag.weight <- dataset.density.ratio(tvl,d,background.density.scaling=background.density.scaling);
         #cat("tag.weight=",tag.weight," ");
-        return(window.call.mirror.binding(d,min.thr=min.thr, tag.weight=tag.weight,bg.tl=rbg.tl, debug=debug, round.up=T, ...));
+        return(window.call.mirror.binding(d,min.thr=min.thr, tag.weight=tag.weight,bg.tl=rbg.tl, debug=debug, round.up=T,background.density.scaling=background.density.scaling, ...));
         #return(window.call.mirror.binding(d,min.thr=min.thr, method=tag.wtd,wsize=200,bg.tl=control.data,window.size=window.size,debug=T,min.dist=min.dist,cluster=cluster))
       });
       if(return.core.data) {
@@ -1132,12 +1129,11 @@ tag.lwcc <- function(ctv,s,e,return.peaks=T, bg.ctv=NULL, mask.ctv=NULL, ...) {
 
 # determine mirror-based binding positions using sliding window along each chromosome
 # extra parameters are passed on to call.nucleosomes()
-window.call.mirror.binding <- function(tvl,window.size=4e7, debug=T, cluster=NULL, bg.tl=NULL, mask.tl=NULL, ...) {
+window.call.mirror.binding <- function(tvl,window.size=4e7, debug=T, cluster=NULL, bg.tl=NULL, mask.tl=NULL, background.density.scaling=T, ...) {
   chrl <- names(tvl);
   # determine bg.weight
   if(!is.null(bg.tl)) {
-    #bg.weight <- sum(unlist(lapply(tvl,length)))/sum(unlist(lapply(bg.tl,length)));
-    bg.weight <- dataset.background.size(tvl)/dataset.background.size(bg.tl);
+    bg.weight <- dataset.density.ratio(tvl,bg.tl,background.density.scaling=background.density.scaling);
   } else {
     bg.weight <- NULL;
   }
@@ -1732,12 +1728,34 @@ t.find.min.saturated.enr <- function(pal,thr=0.01,plot=F,return.number.of.peaks=
 
 
 
-# determine dataset size omitting prominent peaks
-dataset.background.size <- function(tl,min.tag.count.p=1e-5,wsize=1e3,mcs=0) {
-  sum(unlist(lapply(tl,function(d) {
-    x <- tag.enrichment.clusters(abs(d),c(),wsize=wsize,bg.weight=0,min.tag.count.p=min.tag.count.p,mcs=mcs)
-    return(length(which(points.within(abs(d),x$s-wsize/2,x$e+wsize/2)==-1)));
-  })))
+# determine d1/d2 dataset size ratio. If background.density.scaling=F, the ratio of tag counts is returned.
+# if background.density.scaling=T, regions of significant tag enrichment are masked prior to ratio calculation.
+dataset.density.ratio <- function(d1,d2,min.tag.count.p=1e-5,wsize=1e3,mcs=0,background.density.scaling=T) {
+  if(!background.density.scaling) {
+    return(sum(unlist(lapply(d1,length)))/sum(unlist(lapply(d2,length))))
+  }
+  
+  t.chromosome.counts <- function(tl) {
+    lapply(tl,function(d) {
+      x <- tag.enrichment.clusters(abs(d),c(),wsize=wsize,bg.weight=0,min.tag.count.p=min.tag.count.p,mcs=mcs)
+      x$s <- x$s-wsize/2; x$e <- x$e+wsize/2;
+      x <- regionset.intersection.c(list(x),do.union=T)
+      return(c(n=length(which(points.within(abs(d),x$s,x$e)==-1)),s=diff(range(abs(d))),m=sum(x$e-x$s)));
+    })
+  }
+
+  l1 <- t.chromosome.counts(d1);
+  l2 <- t.chromosome.counts(d2);
+
+  l2 <- data.frame(do.call(rbind,l2[names(l1)]));
+  l1 <- data.frame(do.call(rbind,l1));
+
+  # genome size
+  gs <- sum(pmax(l1$s,l2$s))
+
+  den1 <- sum(l1$n)/(gs-sum(l1$m))
+  den2 <- sum(l2$n)/(gs-sum(l2$m))
+  return(den1/den2);
 }
 
 
@@ -1989,4 +2007,30 @@ write.probe.wig <- function(chr,pos,val,fname,append=F,feature="M",probe.length=
     write.table(mdat,file=fname,col.names=F,row.names=F,quote=F,sep=" ",append=append);
   }
   
+}
+
+# returns intersection of multiple region sets
+# each regionset needs to contain $s, $e and optional $v column
+regionset.intersection.c <- function(rsl,max.val=-1,do.union=F) {
+  # translate into position/flag form
+  rfl <- lapply(rsl,function(rs) {
+    rp <- c(rs$s,rs$e); rf <- c(rep(c(1,-1),each=length(rs$s)));
+    
+    ro <- order(rp);
+    rp <- rp[ro]; rf <- rf[ro];
+    if(!is.null(rs$v)) {
+      rv <- c(rs$v,rs$v)[ro];
+      return(data.frame(p=as.numeric(rp),f=as.integer(rf),v=as.numeric(rv)));
+    } else {
+      return(data.frame(p=as.numeric(rp),f=as.integer(rf)));
+    }
+  })
+  rfd <- data.frame(do.call(rbind,lapply(1:length(rfl),function(i) {
+    d <- rfl[[i]]; d$f <- d$f*i; return(d);
+  })))
+  rfd <- rfd[order(rfd$p),];
+  if(is.null(rfd$v)) { max.val <- 0; }
+  if(do.union) { ur <- 1; } else { ur <- 0; }; 
+  rl <- .Call("region_intersection",as.integer(length(rfl)),as.numeric(rfd$p),as.integer(rfd$f),as.numeric(rfd$v),as.integer(max.val),as.integer(ur));
+  return(data.frame(do.call(cbind,rl)));
 }

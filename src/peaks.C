@@ -661,5 +661,139 @@ extern "C" {
 
   }
 
+
+  // finds intersection between a list of regions
+  // the flag has +n/-n value, corresponding to the start/end of a segment in n-th regionset
+  // max_val: 1 - report max overlapping value, -1: report min, 0 - don't look at values
+  // returns: $s, $e, ($v) lists
+  SEXP region_intersection(SEXP n_R,SEXP pos_R,SEXP flags_R,SEXP vals_R,SEXP max_val_R,SEXP union_R) {
+    const int max_val=*INTEGER(max_val_R);
+    const int unionr=*INTEGER(union_R);
+    const int n=*INTEGER(n_R);
+    double* pos=REAL(pos_R);
+    int* flags=INTEGER(flags_R);
+    double* val=REAL(vals_R);
+    
+#ifdef DEBUG  
+    Rprintf("n=%d; npos=%d; max_val=%d\n",n,LENGTH(pos_R),max_val);
+#endif
+
+    int s[n]; // flag status for each set
+    double mv[n]; // max/min value of current clusters
+
+    for(int i=0;i<n;i++) { s[i]=0; }
+    
+    vector<double> starts;
+    vector<double> ends;
+    vector<double> values;
+
+    int start=-1;
+    double mval=0;
+    for(int i=0;i<LENGTH(pos_R);i++) {
+      // update flags
+      int f=flags[i];
+      if(f>0) {
+	s[abs(f)-1]++;
+      } else {
+	s[abs(f)-1]--;
+      }
+      
+      if(max_val!=0 && val[i]*max_val > mval*max_val) { mval=val[i]; }
+
+      // joined status
+      int all;
+      if(unionr) {
+	all=0;
+	for(int j=0;j<n;j++) { if(s[j]>0) { all=1; break;} }
+      } else {
+	all=1;
+	for(int j=0;j<n;j++) { all=all & (s[j]>0); }
+      }
+      
+      
+      //Rprintf("i=%d; s=[",i);
+      //for(int j=0;j<n;j++) { Rprintf("%d",s[j]); }
+      //Rprintf("]; all=%d; start=%d\n",all,start);
+
+      if(start>=0) {
+	// in fragment
+	if(!all) { 
+	  // end fragment
+	  starts.push_back(pos[start]);
+	  ends.push_back(pos[i]);
+	  start=-1;
+	  if(max_val!=0) { values.push_back(mval); }
+
+#ifdef DEBUG  
+	  Rprintf("recorded new fragment (s=%f,e=%f,v=%f);\n",pos[start],pos[i],mval);
+#endif
+	}
+      } else {
+	// should a fragment be started?
+	if(all) {
+	  start=i;
+	  if(max_val!=0) { mval=val[i]; }
+#ifdef DEBUG  
+	  Rprintf("starting new fragment (s=%f,i=%d);\n",pos[start],i);
+#endif
+	}
+      }
+    }
+    SEXP cs_R,ce_R,cv_R;
+    PROTECT(cs_R=allocVector(REALSXP,starts.size())); 
+    PROTECT(ce_R=allocVector(REALSXP,ends.size())); 
+    
+    double* csa=REAL(cs_R);
+    int i=0;
+    for(vector<double>::const_iterator ci=starts.begin(); ci!=starts.end(); ++ci) {
+      csa[i]=*ci; i++;
+    }
+
+    csa=REAL(ce_R);
+    i=0;
+    for(vector<double>::const_iterator ci=ends.begin(); ci!=ends.end(); ++ci) {
+      csa[i]=*ci; i++;
+    }
+    
+    if(max_val!=0) {
+      PROTECT(cv_R=allocVector(REALSXP,values.size())); 
+      csa=REAL(cv_R);
+      i=0;
+      for(vector<double>::const_iterator ci=values.begin(); ci!=values.end(); ++ci) {
+	csa[i]=*ci; i++;
+      }
+    }
+
+    SEXP ans_R, names_R;
+    if(max_val!=0) {
+      PROTECT(names_R = allocVector(STRSXP, 3));
+      SET_STRING_ELT(names_R, 0, mkChar("s"));
+      SET_STRING_ELT(names_R, 1, mkChar("e"));
+      SET_STRING_ELT(names_R, 2, mkChar("v"));
+
+      PROTECT(ans_R = allocVector(VECSXP, 3));
+      SET_VECTOR_ELT(ans_R, 0, cs_R);
+      SET_VECTOR_ELT(ans_R, 1, ce_R);
+      SET_VECTOR_ELT(ans_R, 2, cv_R);
+    } else {
+      PROTECT(names_R = allocVector(STRSXP, 2));
+      SET_STRING_ELT(names_R, 0, mkChar("s"));
+      SET_STRING_ELT(names_R, 1, mkChar("e"));
+
+      PROTECT(ans_R = allocVector(VECSXP, 2));
+      SET_VECTOR_ELT(ans_R, 0, cs_R);
+      SET_VECTOR_ELT(ans_R, 1, ce_R);
+    }
+    
+    setAttrib(ans_R, R_NamesSymbol, names_R);
+    
+    if(max_val!=0) {
+      UNPROTECT(5);
+    } else {
+      UNPROTECT(4);
+    }
+    return(ans_R);
+  }
+
 }
 

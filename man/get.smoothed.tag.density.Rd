@@ -26,6 +26,11 @@ get.smoothed.tag.density(signal.tags, control.tags = NULL, bandwidth = 150, bg.w
     position (e.g. \code{get.binding.characteristics()}$peak$x/2) }
   \item{step}{ The distance between the regularly spaced points for
     which the values should be calculated. }
+  \item{background.density.scaling}{ If TRUE, regions of significant tag
+    enrichment will be masked out when calculating size ratio of the
+    signal to control datasets (to estimate ratio of the background tag
+    density). If FALSE, the dataset ratio will be equal to the ratio of
+    the number of tags in each dataset.}
 }
 \value{
   A list of elements corresponding to chromosomes, with each element

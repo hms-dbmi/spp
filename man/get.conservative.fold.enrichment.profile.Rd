@@ -36,6 +36,11 @@ get.conservative.fold.enrichment.profile(ftl, btl, fws, bwsl = c(1, 5, 25, 50) *
   \item{quick.calculation}{ Use square root transformation method
     instead of a Bayesian method. This speeds up the caclulation
     considerably and is turned on by default. }
+  \item{background.density.scaling}{ If TRUE, regions of significant tag
+    enrichment will be masked out when calculating size ratio of the
+    signal to control datasets (to estimate ratio of the background tag
+    density). If FALSE, the dataset ratio will be equal to the ratio of
+    the number of tags in each dataset.}
 }
 \value{
   A list of elements corresponding to chromosomes, with each element

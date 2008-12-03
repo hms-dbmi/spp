@@ -39,6 +39,11 @@ find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NU
   \item{cluster}{ optional \code{snow} cluster to parallelize the
     processing on }
   \item{min.thr}{ minimal score requirement for a peak }
+  \item{background.density.scaling}{ If TRUE, regions of significant tag
+    enrichment will be masked out when calculating size ratio of the
+    signal to control datasets (to estimate ratio of the background tag
+    density). If FALSE, the dataset ratio will be equal to the ratio of
+    the number of tags in each dataset.}
 
   ~~ randomized controls ~~
   \item{n.randomizations}{ number of tag randomziations that should be
