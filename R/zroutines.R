@@ -340,19 +340,34 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
 }
 
 # returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales
-get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T,background.density.scaling=T) {
+get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T,background.density.scaling=T,bg.weight=NULL,posl=NULL) {
   chrl <- names(ftl); names(chrl) <- chrl;
+  if(!is.null(posl)) {
+    chrl <- chrl[chrl %in% names(posl)];
+  }
   # calculate background tag ratio
-  bg.weight <- dataset.density.ratio(ftl,btl,background.density.scaling=background.density.scaling);
+  if(is.null(bg.weight)) {
+    bg.weight <- dataset.density.ratio(ftl,btl,background.density.scaling=background.density.scaling);
+  }
   lapply(chrl,function(chr) {
     if(is.null(btl[[chr]])) { bt <- c(); } else { bt <- abs(btl[[chr]]+tag.shift); }
-    x <- mbs.enrichment.bounds(abs(ftl[[chr]]+tag.shift),bt,fws=fws,bwsl=bwsl,step=step,calculate.upper.bound=T,bg.weight=bg.weight,use.most.informative.scale=use.most.informative.scale,quick.calculation=quick.calculation,alpha=alpha);
+    if(is.null(posl)) {
+      x <- mbs.enrichment.bounds(abs(ftl[[chr]]+tag.shift),bt,fws=fws,bwsl=bwsl,step=step,calculate.upper.bound=T,bg.weight=bg.weight,use.most.informative.scale=use.most.informative.scale,quick.calculation=quick.calculation,alpha=alpha);
+    } else {
+      x <- mbs.enrichment.bounds(abs(ftl[[chr]]+tag.shift),bt,fws=fws,bwsl=bwsl,step=step,calculate.upper.bound=T,bg.weight=bg.weight,use.most.informative.scale=use.most.informative.scale,quick.calculation=quick.calculation,alpha=alpha,pos=posl[[chr]]);
+    }
     # compose profile showing lower bound for enriched, upper bound for depleted regions
     ps <- rep(1,length(x$mle));
-    ps[x$lb>1] <- x$lb[x$lb>1];
-    ps[x$ub<1] <- x$ub[x$ub<1];
+    vi <- which(!is.na(x$lb) & x$lb>1);
+    ps[vi] <- x$lb[vi];
+    vi <- which(!is.na(x$ub) & x$ub<1);
+    ps[vi] <- x$ub[vi];
     ps <- log2(ps);
-    return(data.frame(x=seq(x$x$s,x$x$e,by=x$x$step),y=ps));
+    if(is.null(posl)) {
+      return(data.frame(x=seq(x$x$s,x$x$e,by=x$x$step),y=ps));
+    } else {
+      return(data.frame(x=posl[[chr]],y=ps));
+    }
   })
 }
 
@@ -1374,7 +1389,7 @@ get.eval.fdr.vectors <- function(x,y) {
   evals <- (1-ey(x))*ny;
   yvals <- (1-ex(x))*nx;
   fdr <- (evals+0.5)/(yvals+0.5); # with pseudo-counts
-  fdr[evals==0] <- min(fdr); # correct for undercounts
+  fdr[yvals==0] <- min(fdr); # correct for undercounts
   return(data.frame(evalue=(evals+1),fdr=fdr));
 }
 
@@ -1830,6 +1845,25 @@ window.tag.count <- function(vin,window.size,window.step=1,return.x=T,from=min(v
   }
 }
 
+# count tags in windows around specified positions (pos)
+window.tag.count.around <- function(vin,window.size,pos,return.x=T,tc=NULL) {
+  if(is.null(tc)) {
+    tc <- table(vin);
+  }
+  storage.mode(pos) <- "double";
+  tpos <- as.integer(names(tc)); storage.mode(tpos) <- "double";
+  tc <- as.integer(tc); storage.mode(tc) <- "integer";
+  
+  whs <- floor(window.size/2);
+  
+  storage.mode(whs) <- "integer";
+  twc <- .Call("cwindow_n_tags_around",tpos,tc,pos,whs);
+  if(return.x) {
+    return(data.frame(x=pos,y=twc));
+  } else {
+    return(twc);
+  }
+}
 
 # given a tag vector (signed), identify and clean up (either remove or cap) singular positions that exceed local tag density
 # vin - tag vector
@@ -1873,27 +1907,40 @@ filter.singular.positions.by.local.density <- function(tags,window.size=200,cap.
 # bt - background tags
 # fws - foreground window size
 # bwsl - background window size list
-# ttcs - a vector with two elements, first giving total tag count, second total sequence size for global scale
 # step - window step
 # rng - from/to coordinates (to will be adjusted according to step)
 #
 # returns: a list with $x ($s $e $step), $lb vector and $mle vector ($ub if calculate.upper.bound=T)
-mbs.enrichment.bounds <- function(ft,bt,fws,bwsl,ttcs=NULL,step=1,rng=NULL,alpha=0.05,calculate.upper.bound=F,bg.weight=length(ft)/length(bt),use.most.informative.scale=F,quick.calculation=F) {
+mbs.enrichment.bounds <- function(ft,bt,fws,bwsl,step=1,rng=NULL,alpha=0.05,calculate.upper.bound=F,bg.weight=length(ft)/length(bt),use.most.informative.scale=F,quick.calculation=F,pos=NULL) {
   # determine range
   if(is.null(rng)) {
     rng <- range(range(ft));
   }
   # foreground counts
-  fwc <- window.tag.count(ft,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
+  if(is.null(pos)) {
+    fwc <- window.tag.count(ft,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
+  } else {
+    fwc <- window.tag.count.around(ft,fws,pos,return.x=T)
+  }
   fwc$y <- fwc$y+0.5;
 
   zal <- qnorm(alpha/2,lower.tail=F);
 
   # background counts
   bt <- sort(bt);
+  if(!is.null(pos)) {
+    tc <- table(bt);
+  }
   bgcm <- lapply(bwsl,function(bgws) {
-    window.tag.count(bt,bgws,window.step=step,from=rng[1],to=rng[2],return.x=F,tv=bt)+0.5;
+    if(is.null(pos)) {
+      window.tag.count(bt,bgws,window.step=step,from=rng[1],to=rng[2],return.x=F,tv=bt)+0.5;
+    } else {
+      window.tag.count.around(bt,bgws,pos,return.x=F,tc=tc)+0.5
+    }
   })
+  if(!is.null(pos)) {
+    rm(tc);
+  }
 
   # pick most informative scale
   if(use.most.informative.scale) {
