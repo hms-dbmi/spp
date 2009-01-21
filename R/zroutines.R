@@ -31,6 +31,30 @@ read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max
   }
 }
 
+read.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
+  if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
+  tl <- lapply(.Call("read_maqmap",filename,rtn),function(d) {
+    xo <- order(abs(d$t));
+    d$t <- d$t[xo];
+    d$n <- d$n[xo];
+    if(read.tag.names) {
+      d$s <- d$s[xo];
+    }
+    return(d);
+  });
+  if(fix.chromosome.names) {
+    # remove ".fa"
+    names(tl) <- gsub("\\.fa","",names(tl))
+  }
+  # separate tags and quality
+  if(read.tag.names) {
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),names=lapply(tl,function(d) d$s)));
+  } else {
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
+  }
+}
+
+
 # read in tags from an extended eland format with match length information
 read.meland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
