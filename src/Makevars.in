@@ -2,3 +2,4 @@ R CMD SHLIB bed2vector.C
 R CMD SHLIB wdl.C
 R CMD SHLIB peaks.C
 R CMD SHLIB cdensum.c
+R CMD SHLIB maqmap.c
