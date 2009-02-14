@@ -10,7 +10,7 @@
   regions exhibiting strong signals within the control data.
 }
 \usage{
-find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NULL, control.data = NULL, min.dist = 200, window.size = 4e+07, cluster = NULL, debug = T, n.randomizations = 3, shuffle.window = 1, min.thr = 0, topN = NULL, tag.count.whs = 100, enrichment.z = 2, method = tag.wtd, tec.filter = T, tec.window.size = 10000, tec.z = 5, tec = NULL, n.control.samples = 1, enrichment.background.scales = c(1, 5, 10), use.randomized.controls = F, ...)
+find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NULL, control.data = NULL, min.dist = 200, window.size = 4e+07, cluster = NULL, debug = T, n.randomizations = 3, shuffle.window = 1, min.thr = 0, topN = NULL, tag.count.whs = 100, enrichment.z = 2, method = tag.wtd, tec.filter = T, tec.window.size = 10000, tec.masking.window.size=tec.window.size, tec.z = 5, tec.poisson.z=5,tec.poisson.ratio=5, n.control.samples = 1, enrichment.background.scales = c(1, 5, 10), use.randomized.controls = F, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -65,16 +65,32 @@ find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NU
   \code{2*tag.count.whs*enrichment.background.scales}. }
   \item{method}{ either \code{tag.wtd} for WTD method, or
     \code{tag.lwcc} for MTC method}
+  \item{mle.filter}{ If turned on, will exclude predicted positions
+    whose MLE enrichment ratio (for any of the background scales) is
+    below a specified min.mle.threshold }
+  \item{min.mle.threshold}{ MLE enrichment ratio threshold that each
+    predicted position must exceed if mle.filter is turned on. }
 
   ~~ masking regions of significant control enrichment ~~
   \item{tec.filter}{ Whether to mask out the regions exhibiting
   significant enrichment in the control data in doing other
   calculations. The regions are identified using Poisson statistics
-  within sliding windows.}
+  within sliding windows, either relative to the scaled signal (tec.z), or
+  relative to randomly-distributed expectation (tec.poisson.z).}
   \item{tec.window.size}{ size of the window used to determine
-  significantly enrichment control regions }
-  \item{tec.z}{ Z-score defining statistical stringency of region
-    selection }
+    significantly enrichent control regions }
+  \item{tec.masking.window.size}{ size of the window used to mask 
+    the area around significantly enrichent control regions }
+  \item{tec.z}{ Z-score defining statistical stringency by which a given
+    window is determined to be significantly higher in the input than in
+    the signal, and masked if that is the case.}
+  \item{tec.poisson.z}{ Z-score defining statistical stringency by which a given
+    window is determined to be significantly higher than the
+    tec.poisson.ratio above the expected uniform input background. }
+  \item{tec.poisson.ratio}{ Fold ratio by which input must exceed the
+    level expected from the uniform distribution. }
+
+
   
   
 }

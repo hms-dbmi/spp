@@ -18,7 +18,8 @@ select.informative.tags(data, binding.characteristics)
 \arguments{
   \item{data}{ Full alignment data (a list with $tags and $quality elements) }
   \item{binding.characteristics}{ result of a
-    \code{\link{get.binding.characteristics}}  call}
+    \code{\link{get.binding.characteristics}}  call. If NULL value is
+    supplied,all tags will be accepted. }
 }
 \value{
   A chromosome-wise tag list. Each element of the list corresponds to a
