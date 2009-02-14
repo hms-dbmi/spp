@@ -484,7 +484,7 @@ extern "C" {
   // given a list of sorted chromosome signal and background vectors (unscaled), determine 
   // cluster contigs exceeding thr poisson P value, based on a whs window size,
   // and satisfying mcs cluster size
-  SEXP find_poisson_enrichment_clusters(SEXP pos_R,SEXP flag_R,SEXP wsize_R,SEXP thr_R,SEXP mcs_R,SEXP bgm_R,SEXP mintag_R) {
+  SEXP find_poisson_enrichment_clusters(SEXP pos_R,SEXP flag_R,SEXP wsize_R,SEXP thr_R,SEXP mcs_R,SEXP bgm_R,SEXP mintag_R,SEXP either_R) {
 
 #ifdef DEBUG  
     Rprintf("start\n");
@@ -495,6 +495,7 @@ extern "C" {
     
     int mcs=*INTEGER(mcs_R);
     int wsize=*INTEGER(wsize_R);
+    int either=*INTEGER(either_R);
     double thr=REAL(thr_R)[0];
     double bgm=REAL(bgm_R)[0];
     double mintag=REAL(mintag_R)[0];
@@ -588,7 +589,11 @@ extern "C" {
 	Rprintf("s=%d (%f); e=%d (%f); window: %f-%f; cc=[%d,%d]; lb=%f; ub=%f\n",si,pos[si],ei,pos[ei],ws,ws+wsize,cc[0],cc[1],lb,ub);
 #endif
       
-	if(lb>=bgm && cc[1]>=mintag) {
+	int bc=lb>=bgm && cc[1]>=mintag;
+	if(either) {
+	  bc=lb>=bgm || cc[1]>=mintag;
+	}
+	if(bc) {
 	  if(inclust) {
 	    double nce=ws+wsize/2.0;
 	    if(nce-ce > wsize/2.0) {
