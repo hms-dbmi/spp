@@ -91,7 +91,6 @@ SEXP read_bed_ends(SEXP filename) {
       int fstart=atoi(str_start.c_str());
       string str_end=*sit++;
       int fend=atoi(str_end.c_str());
-      int mid=(fend+fstart)/2;
       int fpos=fstart;
       if(sit!=tok.end()) {
          string u0=*sit++;
@@ -1099,6 +1098,157 @@ SEXP read_eland_mismatches(SEXP filename) {
   UNPROTECT(np);
   return(ans);
 }
+
+
+
+  // read in tagalign file
+  SEXP read_tagalign(SEXP filename) {
+
+#ifdef DEBUG  
+  Rprintf("start\n");
+#endif
+  const char* fname=CHAR(asChar(filename));
+#ifdef DEBUG  
+  Rprintf("fname=%s\n",fname);
+#endif
+
+  // main data vector
+  // chr - pos
+  vector< vector<int> > pos;
+  vector< vector<int> > posnm; // number of mismatches
+
+  // chromosome map
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  vector<string> cnames;
+  
+
+  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
+  boost::char_separator<char> sep(" \t");
+
+  
+  FILE *f=fopen(fname,"rb");
+  if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
+  else {
+  Rprintf("opened %s\n",fname);
+
+  // read in bed line
+  string line;
+  int fcount=0;
+  while(get_a_line(f,line)) {
+
+#ifdef DEBUG  
+    Rprintf("line: %s\n",line.c_str());
+#endif
+
+
+    tokType tok(line, sep);
+    tokType::iterator sit=tok.begin();
+    if(sit!=tok.end()) {
+      string chr=*sit++;
+      string str_spos=*sit++;
+      string str_epos=*sit++;
+      sit++; 
+      string str_qual=*sit++;
+      string str_strand=*sit;
+
+      int fpos;
+      if(str_strand[0]=='+') {
+	fpos=atoi(str_spos.c_str());
+      } else {
+	fpos=-1*atoi(str_epos.c_str());
+      }
+      int nm=atoi(str_qual.c_str());
+      
+      // determine the chromosome index
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      int cind=-1;
+      if(li==cind_map.end()) {
+	// register new chromosome
+	cind=cnames.size();
+	cnames.push_back(chr);
+	cind_map[chr]=cind;
+	// allocate new pos vector
+	pos.push_back(vector<int>());
+	posnm.push_back(vector<int>());
+#ifdef DEBUG  
+	Rprintf("registered new chromosome %s with cind=%d, pos.size=%d\n",chr.c_str(),cind,pos.size());
+#endif
+      } else {
+	cind=li->second;
+      }
+      fcount++;
+      (pos[cind]).push_back(fpos);
+      (posnm[cind]).push_back(nm);
+#ifdef DEBUG  
+      Rprintf("read in position chr=%s cind=%d fpos=%d nm=%d\n",chr.c_str(),cind,fpos,nm);
+      if(fcount>30) {
+	break;
+      }
+#endif
+      
+    }
+  }
+  fclose(f);
+     
+  Rprintf("done. read %d fragments\n",fcount);
+  }
+    // construct output structures
+  SEXP chnames;
+  int np=0; // number of protections
+  PROTECT(chnames = allocVector(STRSXP, cnames.size()));
+  for(vector<string>::const_iterator csi=cnames.begin();csi!=cnames.end();++csi) {
+    SET_STRING_ELT(chnames, csi-cnames.begin(), mkChar(csi->c_str()));
+  }
+  np++;
+
+  // sort
+  //for(vector<vector<int> >::iterator csi=pos.begin();csi!=pos.end();++csi) {
+  //  sort(csi->begin(), csi->end(), lessAbsoluteValue());
+  //}
+
+  SEXP ans;
+  PROTECT(ans = allocVector(VECSXP, cnames.size()));   np++;
+  vector<vector<int> >::const_iterator nsi;
+  for(vector<vector<int> >::const_iterator csi=pos.begin();csi!=pos.end();++csi) {
+    nsi=posnm.begin()+(csi-pos.begin());
+
+    SEXP dv,dnames_R;
+    PROTECT(dnames_R = allocVector(STRSXP, 2)); np++;
+    SET_STRING_ELT(dnames_R, 0, mkChar("t"));
+    SET_STRING_ELT(dnames_R, 1, mkChar("n"));
+    
+    
+    SEXP tv,nv;
+    PROTECT(tv=allocVector(INTSXP,csi->size()));   np++;
+    PROTECT(nv=allocVector(INTSXP,csi->size()));   np++;
+    int* i_tv=INTEGER(tv);
+    int* i_nv=INTEGER(nv);
+    
+    int i=0;
+    vector<int>::const_iterator ini=nsi->begin();
+    for(vector<int> ::const_iterator pi=csi->begin();pi!=csi->end();++pi) {
+      i_tv[i]=*pi;
+      i_nv[i]=*ini++;
+      i++;
+    }
+    PROTECT(dv = allocVector(VECSXP, 2));   np++;
+    SET_VECTOR_ELT(dv, 0, tv);
+    SET_VECTOR_ELT(dv, 1, nv);
+    setAttrib(dv, R_NamesSymbol, dnames_R);
+    
+    SET_VECTOR_ELT(ans, csi-pos.begin(), dv);
+  }
+
+  setAttrib(ans,R_NamesSymbol,chnames);
+
+#ifdef DEBUG  
+  Rprintf("unprotecting %d elements\n",np);
+#endif
+  
+  UNPROTECT(np);
+  return(ans);
+}
+
 
 
 }
