@@ -31,6 +31,24 @@ read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max
   }
 }
 
+read.tagalign.tags <- function(filename,fix.chromosome.names=T,fix.quality=T) {
+  tl <- lapply(.Call("read_tagalign",filename),function(d) {
+    xo <- order(abs(d$t));
+    d$t <- d$t[xo];
+    d$n <- d$n[xo];
+    if(fix.quality) {
+      d$n <- 4-cut(d$n,breaks=c(0,250,500,750,1000),labels=F)
+    }
+    return(d);
+  });
+  if(fix.chromosome.names) {
+    # remove ".fa"
+    names(tl) <- gsub("\\.fa","",names(tl))
+  }
+  # separate tags and quality
+  return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
+}
+
 read.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
   tl <- lapply(.Call("read_maqmap",filename,rtn),function(d) {
@@ -282,10 +300,13 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
 
 
 # select a set of informative tags based on the pre-calculated binding characteristics
-select.informative.tags <- function(data,binding.characteristics) {
+select.informative.tags <- function(data,binding.characteristics=NULL) {
+  if(is.null(binding.characteristics)) {
+    return(data$tags);
+  }
   if(is.null(binding.characteristics$quality.bin.acceptance)) {
     cat("binding characteristics doesn't contain quality selection info, accepting all tags\n");
-    return(data);
+    return(data$tags);
   }
 
   ib <- binding.characteristics$quality.bin.acceptance$informative.bins;
@@ -326,7 +347,7 @@ select.informative.tags <- function(data,binding.characteristics) {
 # tag.lwcc - LWCC method;
 #           must specify whs - a size of the window used to calculate binding scores
 #           can specify isize (default=15bp) - size of the internal window that is masked out
-find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked.data=NULL,control.data=NULL,whs=200,min.dist=200,window.size=4e7,cluster=NULL,debug=T,n.randomizations=3,shuffle.window=1,min.thr=2,topN=NULL, tag.count.whs=100, enrichment.z=2, method=tag.wtd, tec.filter=T,tec.window.size=1e4,tec.z=5, tec=NULL, n.control.samples=1, enrichment.scale.down.control=F, enrichment.background.scales=c(1,5,10), use.randomized.controls=F, background.density.scaling=T, ...) {
+find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked.data=NULL,control.data=NULL,whs=200,min.dist=200,window.size=4e7,cluster=NULL,debug=T,n.randomizations=3,shuffle.window=1,min.thr=2,topN=NULL, tag.count.whs=100, enrichment.z=2, method=tag.wtd, tec.filter=T,tec.window.size=1e4,tec.z=5,tec.masking.window.size=tec.window.size, tec.poisson.z=5,tec.poisson.ratio=5, tec=NULL, n.control.samples=1, enrichment.scale.down.control=F, enrichment.background.scales=c(1,5,10), use.randomized.controls=F, background.density.scaling=T, mle.filter=F, min.mle.threshold=1, ...) {
 
   if(f<1) {
     if(debug) { cat("subsampling signal ... "); }
@@ -336,12 +357,16 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
 
 
   if(!is.null(control.data) && !use.randomized.controls) {
+    # limit both control and signal data to a common set of chromosomes
+    chrl <- intersect(names(signal.data),names(control.data));
+    signal.data <- signal.data[chrl];
+    control.data <- control.data[chrl];
     control <- list(control.data);
   } else {
     control <- NULL;
   }
   
-  prd <- lwcc.prediction(signal.data,min.dist=min.dist,whs=whs,window.size=window.size,e.value=e.value,fdr=fdr,debug=debug,n.randomizations=n.randomizations,shuffle.window=shuffle.window,min.thr=min.thr,cluster=cluster,method=method,bg.tl=control.data,mask.tl=masked.data, topN=topN, control=control,tec.filter=tec.filter,tec.z=tec.z,tec.window.size=tec.window.size, background.density.scaling=background.density.scaling, ...);
+  prd <- lwcc.prediction(signal.data,min.dist=min.dist,whs=whs,window.size=window.size,e.value=e.value,fdr=fdr,debug=debug,n.randomizations=n.randomizations,shuffle.window=shuffle.window,min.thr=min.thr,cluster=cluster,method=method,bg.tl=control.data,mask.tl=masked.data, topN=topN, control=control,tec.filter=tec.filter,tec.z=tec.z,tec.window.size=tec.window.size, tec.masking.window.size=tec.masking.window.size, tec.poisson.z=tec.poisson.z,tec.poisson.ratio=tec.poisson.ratio, background.density.scaling=background.density.scaling, ...);
 
   # add tag counts
   chrl <- names(prd$npl); names(chrl) <- chrl;
@@ -358,6 +383,17 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
   
   # calculate enrichment ratios
   prd <- calculate.enrichment.estimates(prd,signal.data,control.data=control.data,fraction=1,tag.count.whs=tag.count.whs,z=enrichment.z,scale.down.control=enrichment.scale.down.control,background.scales=enrichment.background.scales);
+
+  if(mle.filter) {
+    if(!is.null(prd$npl)) {
+      if(length(prd$npl)>1) {
+        mle.columns <- grep("enr.mle",colnames(prd$npl[[1]]));
+        if(length(mle.columns)>1) {
+          prd$npl <- lapply(prd$npl,function(d) d[apply(d[,mle.columns],1,function(x) all(x>min.mle.threshold)),])
+        }
+      }
+    }
+  }
 
   return(prd);
 }
@@ -690,7 +726,7 @@ show.scc <- function(tl,srange,cluster=NULL) {
 }
 
 # find regions of significant tag enrichment
-find.significantly.enriched.regions <- function(signal.data,control.data,window.size=500,multiplier=1,z.thr=3,mcs=0,debug=F,background.density.scaling=T) {
+find.significantly.enriched.regions <- function(signal.data,control.data,window.size=500,multiplier=1,z.thr=3,mcs=0,debug=F,background.density.scaling=T,masking.window.size=window.size,poisson.z=0,poisson.ratio=4,either=T) {
   bg.weight <- dataset.density.ratio(signal.data,control.data,background.density.scaling=background.density.scaling);
 
   if(debug) {
@@ -698,8 +734,8 @@ find.significantly.enriched.regions <- function(signal.data,control.data,window.
   }
   chrl <- names(signal.data); names(chrl) <- chrl; 
   tec <- lapply(chrl,function(chr) {
-    d <- tag.enrichment.clusters(signal.data[[chr]],control.data[[chr]],bg.weight=bg.weight*multiplier,thr=z.thr,wsize=window.size,mcs=mcs);
-    d$s <- d$s-window.size/2; d$e <- d$e+window.size/2;
+    d <- tag.enrichment.clusters(signal.data[[chr]],control.data[[chr]],bg.weight=bg.weight*multiplier,thr=z.thr,wsize=window.size,mcs=mcs,min.tag.count.z=poisson.z,min.tag.count.ratio=poisson.ratio,either=either);
+    d$s <- d$s-masking.window.size/2; d$e <- d$e+masking.window.size/2;
     return(d);
   })
 }
@@ -709,13 +745,13 @@ find.significantly.enriched.regions <- function(signal.data,control.data,window.
 # thr - z score threshold
 # mcs - minimal cluster size
 # bg.weight - fraction by which background counts should be multipled
-# min.tag.count.z will impose a poisson constraint based on randomized signal on top of background constaint
-tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=50,bg.weight=1,min.tag.count.p=1,tag.av.den=NULL,min.tag.count.thr=0) {
+# min.tag.count.z will impose a poisson constraint based on randomized signal in parallel of background constaint (0 - no constraint)
+tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=1,bg.weight=1,min.tag.count.z=0,tag.av.den=NULL,min.tag.count.thr=0,min.tag.count.ratio=4,either=F) {
   if(is.null(tag.av.den)) {
     tag.av.den <- length(signal)/diff(range(abs(signal)));
   }
-  if(min.tag.count.p<1) {
-    min.tag.count.thr <- qpois(min.tag.count.p,tag.av.den*wsize,lower.tail=F)
+  if(min.tag.count.z>0) {
+    min.tag.count.thr <- qpois(pnorm(min.tag.count.z,lower.tail=F),min.tag.count.ratio*tag.av.den*wsize,lower.tail=F)
   }
   
   #if(bg.weight!=1) {
@@ -734,8 +770,10 @@ tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=50,bg.
   storage.mode(thr) <- storage.mode(pv) <- "double";
   storage.mode(bg.weight) <- "double";
   storage.mode(min.tag.count.thr) <- "double";
+  either <- as.integer(either);
+  storage.mode(either) <- "integer";
   
-  z <- .Call("find_poisson_enrichment_clusters",pv,fv,wsize,thr,mcs,bg.weight,min.tag.count.thr)
+  z <- .Call("find_poisson_enrichment_clusters",pv,fv,wsize,thr,mcs,bg.weight,min.tag.count.thr,either)
   return(z);
 }
 
@@ -750,7 +788,7 @@ tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=50,bg.
 # return.rtp - return randomized tag peaks - do not fit thresholds or do actual predictions
 # topN - use min threshold to do a run, return topN peaks from entire genome
 # threshold - specify a user-defined threshold
-lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr=0, n.randomizations=1, shuffle.window=1, debug=T, predict.on.random=F, shuffle.both.strands=T,strand.shuffle.only=F, return.rtp=F, control=NULL, print.level=0, threshold=NULL, topN=NULL, bg.tl=NULL, tec.filter=T, tec.window.size=1e3,tec.z=3, bg.reverse=T, return.control.predictions=F, return.core.data=F, background.density.scaling=T, ... ) {
+lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr=0, n.randomizations=1, shuffle.window=1, debug=T, predict.on.random=F, shuffle.both.strands=T,strand.shuffle.only=F, return.rtp=F, control=NULL, print.level=0, threshold=NULL, topN=NULL, bg.tl=NULL, tec.filter=T, tec.window.size=1e3,tec.z=3, tec.masking.window.size=tec.window.size, tec.poisson.z=3,tec.poisson.ratio=4, bg.reverse=T, return.control.predictions=F, return.core.data=F, background.density.scaling=T, ... ) {
 
   control.predictions <- NULL;
   core.data <- list();
@@ -780,7 +818,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
       }
       if(tec.filter) {
         if(debug) { cat("finding background exclusion regions ... "); }
-        tec <- find.significantly.enriched.regions(bg.tl,tvl,window.size=tec.window.size,z.thr=tec.z);
+        tec <- find.significantly.enriched.regions(bg.tl,tvl,window.size=tec.window.size,z.thr=tec.z,masking.window.size=tec.masking.window.size,poisson.z=tec.poisson.z,poisson.ratio=tec.poisson.ratio,background.density.scaling=background.density.scaling);
         if(return.core.data) {
           core.data <- c(core.data,list(tec=tec));
         }
@@ -818,8 +856,8 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
     rtp <- do.call(rbind,lapply(rtp,function(d) do.call(rbind,d))); # merge tables
     
     # generate real data predictions
-    if(debug) { cat("determining peaks on real data:\n");   }      
-    npl <- window.call.mirror.binding(tvl,min.thr=min.thr,bg.tl=bg.tl, debug=debug, ...);
+    if(debug) { cat("determining peaks on real data:\n");   }
+    npl <- window.call.mirror.binding(tvl,min.thr=min.thr,bg.tl=bg.tl, debug=debug, background.density.scaling=background.density.scaling, ...);
     #npl <- window.call.mirror.binding(tvl,min.thr=min.thr, method=tag.wtd,wsize=200,bg.tl=control.data,window.size=window.size,debug=T,min.dist=min.dist,cluster=cluster);
     if(return.core.data) {
       core.data <- c(core.data,list(npl.unfiltered=npl));
@@ -1438,6 +1476,11 @@ get.eval.fdr.vectors <- function(x,y) {
   yvals <- (1-ex(x))*nx;
   fdr <- (evals+0.5)/(yvals+0.5); # with pseudo-counts
   fdr[yvals==0] <- min(fdr); # correct for undercounts
+  # find a min x corresponding to a minimal FDR
+  mfdr <- min(fdr);
+  mfdrmx <- min(x[fdr==mfdr]);
+  # correct
+  fdr[x>=mfdrmx] <- mfdr;
   return(data.frame(evalue=(evals+1),fdr=fdr));
 }
 
@@ -1793,14 +1836,30 @@ t.find.min.saturated.enr <- function(pal,thr=0.01,plot=F,return.number.of.peaks=
 
 # determine d1/d2 dataset size ratio. If background.density.scaling=F, the ratio of tag counts is returned.
 # if background.density.scaling=T, regions of significant tag enrichment are masked prior to ratio calculation.
-dataset.density.ratio <- function(d1,d2,min.tag.count.p=1e-5,wsize=1e3,mcs=0,background.density.scaling=T) {
+dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T) {
+  if(!background.density.scaling) {
+    return(sum(unlist(lapply(d1,length)))/sum(unlist(lapply(d2,length))))
+  }
+
+  chrl <- intersect(names(d1),names(d2));
+  ntc <- do.call(rbind,lapply(chrl,function(chr) {
+    x1 <- tag.enrichment.clusters(abs(d1[[chr]]),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
+    x2 <- tag.enrichment.clusters(abs(d2[[chr]]),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
+    return(c(length(which(points.within(abs(d1[[chr]]),c(x1$s,x2$s)-wsize/2,c(x1$e,x2$e)+wsize/2)==-1)),length(which(points.within(abs(d2[[chr]]),c(x1$s,x2$s)-wsize/2,c(x1$e,x2$e)+wsize/2)==-1))))
+  }))
+  ntcs <- apply(ntc,2,sum);
+  #print(ntcs/c(sum(unlist(lapply(d1,length))),sum(unlist(lapply(d2,length)))));
+  return(ntcs[1]/ntcs[2])
+}
+
+old.dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T) {
   if(!background.density.scaling) {
     return(sum(unlist(lapply(d1,length)))/sum(unlist(lapply(d2,length))))
   }
   
   t.chromosome.counts <- function(tl) {
     lapply(tl,function(d) {
-      x <- tag.enrichment.clusters(abs(d),c(),wsize=wsize,bg.weight=0,min.tag.count.p=min.tag.count.p,mcs=mcs)
+      x <- tag.enrichment.clusters(abs(d),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
       x$s <- x$s-wsize/2; x$e <- x$e+wsize/2;
       x <- regionset.intersection.c(list(x),do.union=T)
       return(c(n=length(which(points.within(abs(d),x$s,x$e)==-1)),s=diff(range(abs(d))),m=sum(x$e-x$s)));
