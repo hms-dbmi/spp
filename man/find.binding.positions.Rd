@@ -10,7 +10,7 @@
   regions exhibiting strong signals within the control data.
 }
 \usage{
-find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NULL, control.data = NULL, min.dist = 200, window.size = 4e+07, cluster = NULL, debug = T, n.randomizations = 3, shuffle.window = 1, min.thr = 0, topN = NULL, tag.count.whs = 100, enrichment.z = 2, method = tag.wtd, tec.filter = T, tec.window.size = 10000, tec.masking.window.size=tec.window.size, tec.z = 5, tec.poisson.z=5,tec.poisson.ratio=5, n.control.samples = 1, enrichment.background.scales = c(1, 5, 10), use.randomized.controls = F, ...)
+find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NULL, control.data = NULL, min.dist = 200, window.size = 4e+07, cluster = NULL, debug = T, n.randomizations = 3, shuffle.window = 1, min.thr = 0, topN = NULL, tag.count.whs = 100, enrichment.z = 2, method = tag.wtd, tec.filter = T, tec.window.size = 10000, tec.masking.window.size=tec.window.size, tec.z = 5, tec.poisson.z=5,tec.poisson.ratio=5, n.control.samples = 1, enrichment.background.scales = c(1, 5, 10), background.density.scaling = F, use.randomized.controls = F, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

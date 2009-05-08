@@ -10,7 +10,7 @@
   which quality bins improve the cross-correlation pattern.
 }
 \usage{
-get.binding.characteristics(data, srange = c(50, 500), bin = 5, cluster = NULL, debug = F, min.tag.count = 1000, acceptance.z.score = 3, remove.tag.anomalies = T, anomalies.z = 5)
+get.binding.characteristics(data, srange = c(50, 500), bin = 5, cluster = NULL, debug = F, min.tag.count = 1000, acceptance.z.score = 3, remove.tag.anomalies = T, anomalies.z = 5,accept.all.tags=F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -31,6 +31,9 @@ get.binding.characteristics(data, srange = c(50, 500), bin = 5, cluster = NULL, 
   \item{anomalies.z}{ Z-score for determining if the number of tags at a
   given position is significantly higher about background, and should be
   considered an anomaly.}
+  \item{accept.all.tags}{ Whether tag alignment quality calculations
+    should be skipped and all available tags should be accepted in the
+    downstream analysis.}
 }
 \value{
   \item{cross.correlation }{ Cross-correlation profile as an $x/$y data.frame}
