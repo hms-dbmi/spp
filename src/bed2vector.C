@@ -9,7 +9,7 @@
 #include <string>
 #include <functional>
 #include <utility>
-#include <hash_map.h>
+#include <hash_map>
 #include <boost/tokenizer.hpp>
 
 extern "C" {
@@ -568,7 +568,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   
 
   typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
+  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
 
   
   FILE *f=fopen(fname,"rb");
@@ -761,7 +761,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   
 
   typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
+  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
 
   
   FILE *f=fopen(fname,"rb");
@@ -948,7 +948,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   
 
   typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
+  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
 
   
   FILE *f=fopen(fname,"rb");
@@ -978,6 +978,12 @@ SEXP read_eland_mismatches(SEXP filename) {
       string str_y=*sit++;
 
       string tagname=machinename+"."+runnumber+"."+lanenumber+"."+str_x+"."+str_y;
+
+      Rprintf("machine: %s; runnumber= %s; lanenumber= %s; str_x= %s; str_y= %s;\n",machinename.c_str(),runnumber.c_str(),lanenumber.c_str(),str_x.c_str(),str_y.c_str());
+
+      *sit++;
+      *sit++;
+
       
       string sequence=*sit++;
       *sit++;
@@ -1149,7 +1155,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   
 
   typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
+  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
   boost::char_separator<char> sep2(",");
 
   
@@ -1343,7 +1349,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   
 
   typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
+  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
 
   
   FILE *f=fopen(fname,"rb");

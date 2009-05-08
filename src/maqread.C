@@ -9,7 +9,6 @@
 #include <string>
 #include <functional>
 #include <utility>
-#include <hash_map.h>
 #include <zlib.h>
 
 extern "C" {

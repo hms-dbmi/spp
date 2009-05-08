@@ -7,7 +7,7 @@
   number of mismatches associated with each mapped tag.
 }
 \usage{
-read.eland.tags(filename, read.tag.names = F, fix.chromosome.names = T, max.eland.tag.length = -1)
+read.eland.tags(filename, read.tag.names = F, fix.chromosome.names = T, max.eland.tag.length = -1,extended=F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -18,6 +18,8 @@ read.eland.tags(filename, read.tag.names = F, fix.chromosome.names = T, max.elan
   \item{max.eland.tag.length}{ Specifies max length of the tag sequence
     considered by ELAND. This needs to be specified if the tags are
     longer than the sequences considred by ELAND during alignment. }
+  \item{extended}{ Whether the file is written out in "extended" format
+    provided in GA pipeline 1.0. }
 }
 \value{
   \item{tags }{ A vector of 5' tag coordinates, with negative values
