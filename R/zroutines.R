@@ -49,6 +49,46 @@ read.tagalign.tags <- function(filename,fix.chromosome.names=T,fix.quality=T) {
   return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
 }
 
+
+read.arachne.tags <- function(filename,fix.chromosome.names=F) {
+  tl <- lapply(.Call("read_arachne",filename),function(d) {
+    xo <- order(abs(d$t));
+    d$t <- d$t[xo];
+    d$n <- d$n[xo];
+    return(d);
+  });
+  if(fix.chromosome.names) {
+    # remove ".fa"
+    names(tl) <- gsub("\\.fa","",names(tl))
+  }
+  # separate tags and quality
+  return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
+}
+
+read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
+  if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
+  tl <- lapply(.Call("read_bowtie",filename,rtn),function(d) {
+    xo <- order(abs(d$t));
+    d$t <- d$t[xo];
+    d$n <- d$n[xo];
+    if(read.tag.names) {
+      d$s <- d$s[xo];
+    }
+    return(d);
+  });
+  if(fix.chromosome.names) {
+    # remove ".fa"
+    names(tl) <- gsub("\\.fa","",names(tl))
+  }
+  # separate tags and quality
+  if(read.tag.names) {
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),names=lapply(tl,function(d) d$s)));
+  } else {
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
+  }
+}
+
+
 read.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
   tl <- lapply(.Call("read_maqmap",filename,rtn),function(d) {
@@ -196,7 +236,7 @@ remove.local.tag.anomalies <- function(tags,window.size=200,eliminate.fold=10,ca
 
 # assess strand cross-correlation, determine peak position, determine appropriate window size
 # for binding detection.
-get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL,debug=F,min.tag.count=1e3,acceptance.z.score=3,remove.tag.anomalies=T,anomalies.z=5) {
+get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL,debug=F,min.tag.count=1e3,acceptance.z.score=3,remove.tag.anomalies=T,anomalies.z=5,accept.all.tags=F) {
   data <- remove.tag.anomalies(data,z=anomalies.z);
   # take highest quality tag bin
   if(!is.null(data$quality)) {
@@ -227,10 +267,10 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
   th <- (ccl.av$y[pi]-ccl.av$y[length(ccl.av$y)])/3+ccl.av$y[length(ccl.av$y)]
   whs <- max(ccl.av$x[ccl.av$y>=th]);
 
-
+  
 
   # determine acceptance of different quality bins
-
+  
   # calculates tag scc for the best tags, and combinations of best tag category with every other category
   # for subsequent selection of acceptable categories
   scc.acceptance.calc <- function() {
@@ -289,7 +329,7 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
     return(list(informative.bins=ac,quality.cc=qccl))
   }
 
-  if(is.null(data$quality)) {
+  if(accept.all.tags | is.null(data$quality)) {
     return(list(cross.correlation=ccl.av,peak=list(x=ccl.av$x[pi],y=ccl.av$y[pi]),whs=whs))    
   } else {
     acc <- scc.acceptance.calc();
@@ -356,7 +396,7 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
   }
 
 
-  if(!is.null(control.data) && !use.randomized.controls) {
+  if(!is.null(control.data) & !use.randomized.controls) {
     # limit both control and signal data to a common set of chromosomes
     chrl <- intersect(names(signal.data),names(control.data));
     signal.data <- signal.data[chrl];
@@ -394,6 +434,8 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
       }
     }
   }
+
+  prd$whs <- whs;
 
   return(prd);
 }
@@ -726,15 +768,17 @@ show.scc <- function(tl,srange,cluster=NULL) {
 }
 
 # find regions of significant tag enrichment
-find.significantly.enriched.regions <- function(signal.data,control.data,window.size=500,multiplier=1,z.thr=3,mcs=0,debug=F,background.density.scaling=T,masking.window.size=window.size,poisson.z=0,poisson.ratio=4,either=T) {
-  bg.weight <- dataset.density.ratio(signal.data,control.data,background.density.scaling=background.density.scaling);
+find.significantly.enriched.regions <- function(signal.data,control.data,window.size=500,multiplier=1,z.thr=3,mcs=0,debug=F,background.density.scaling=T,masking.window.size=window.size,poisson.z=0,poisson.ratio=4,either=F,tag.shift=146/2,bg.weight=NULL) {
+  if(is.null(bg.weight)) {
+    bg.weight <- dataset.density.ratio(signal.data,control.data,background.density.scaling=background.density.scaling);
+  }
 
   if(debug) {
     cat("bg.weight=",bg.weight,"\n");
   }
   chrl <- names(signal.data); names(chrl) <- chrl; 
   tec <- lapply(chrl,function(chr) {
-    d <- tag.enrichment.clusters(signal.data[[chr]],control.data[[chr]],bg.weight=bg.weight*multiplier,thr=z.thr,wsize=window.size,mcs=mcs,min.tag.count.z=poisson.z,min.tag.count.ratio=poisson.ratio,either=either);
+    d <- tag.enrichment.clusters(signal.data[[chr]],control.data[[chr]],bg.weight=bg.weight*multiplier,thr=z.thr,wsize=window.size,mcs=mcs,min.tag.count.z=poisson.z,min.tag.count.ratio=poisson.ratio,either=either,tag.shift=tag.shift);
     d$s <- d$s-masking.window.size/2; d$e <- d$e+masking.window.size/2;
     return(d);
   })
@@ -746,19 +790,21 @@ find.significantly.enriched.regions <- function(signal.data,control.data,window.
 # mcs - minimal cluster size
 # bg.weight - fraction by which background counts should be multipled
 # min.tag.count.z will impose a poisson constraint based on randomized signal in parallel of background constaint (0 - no constraint)
-tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=1,bg.weight=1,min.tag.count.z=0,tag.av.den=NULL,min.tag.count.thr=0,min.tag.count.ratio=4,either=F) {
+tag.enrichment.clusters <- function(signal,background,wsize=200,thr=3,mcs=1,bg.weight=1,min.tag.count.z=0,tag.av.den=NULL,min.tag.count.thr=0,min.tag.count.ratio=4,either=F,tag.shift=146/2) {
   if(is.null(tag.av.den)) {
     tag.av.den <- length(signal)/diff(range(abs(signal)));
   }
   if(min.tag.count.z>0) {
     min.tag.count.thr <- qpois(pnorm(min.tag.count.z,lower.tail=F),min.tag.count.ratio*tag.av.den*wsize,lower.tail=F)
+  } else {
+    min.tag.count.thr <- 0;
   }
   
   #if(bg.weight!=1) {
   #  background <- sample(background,length(background)*(bg.weight),replace=T);
   #}
   # make up combined position, flag vectors
-  pv <- abs(c(signal,background));
+  pv <- abs(c(signal,background)+tag.shift);
   fv <- c(rep(1,length(signal)),rep(0,length(background)));
   po <- order(pv);
   pv <- pv[po];
@@ -792,6 +838,16 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
 
   control.predictions <- NULL;
   core.data <- list();
+
+  if(!is.null(bg.tl) & tec.filter) {
+    if(debug) { cat("finding background exclusion regions ... "); }
+    tec <- find.significantly.enriched.regions(bg.tl,tvl,window.size=tec.window.size,z.thr=tec.z,masking.window.size=tec.masking.window.size,poisson.z=tec.poisson.z,poisson.ratio=tec.poisson.ratio,background.density.scaling=background.density.scaling,either=T);
+    if(return.core.data) {
+      core.data <- c(core.data,list(tec=tec));
+    }
+    if(debug) { cat("done\n"); }
+  }
+
   
   if(is.null(threshold) & is.null(topN)) { # threshold determination is needed
     # generate control predictions
@@ -815,14 +871,6 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
         }
       } else {
         rbg.tl <- NULL;
-      }
-      if(tec.filter) {
-        if(debug) { cat("finding background exclusion regions ... "); }
-        tec <- find.significantly.enriched.regions(bg.tl,tvl,window.size=tec.window.size,z.thr=tec.z,masking.window.size=tec.masking.window.size,poisson.z=tec.poisson.z,poisson.ratio=tec.poisson.ratio,background.density.scaling=background.density.scaling);
-        if(return.core.data) {
-          core.data <- c(core.data,list(tec=tec));
-        }
-        if(debug) { cat("done\n"); }
       }
       n.randomizations <- length(control);
       #signal.size <- sum(unlist(lapply(tvl,length)));
@@ -863,7 +911,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
       core.data <- c(core.data,list(npl.unfiltered=npl));
     }
 
-    if(!is.null(control) && tec.filter) {
+    if(!is.null(bg.tl) & tec.filter) {
       if(debug) { cat("excluding systematic background anomalies ... "); }
       npl <- filter.binding.sites(npl,tec,exclude=T);
       if(debug) { cat("done\n"); }
@@ -909,7 +957,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
 
     cat("calling binding positions using",thr$type,"threshold (",thr$root,") :\n");
     npl <- window.call.mirror.binding(tvl=tvl,min.thr=thr$root,bg.tl=bg.tl, debug=debug, ...);
-    if(!is.null(control) && tec.filter) {
+    if(!is.null(bg.tl) & tec.filter) {
       if(debug) { cat("excluding systematic background anomalies ... "); }
       npl <- filter.binding.sites(npl,tec,exclude=T);
       if(debug) { cat("done\n"); }
@@ -1275,7 +1323,7 @@ window.chr.call.mirror.binding <- function(ctvl,window.size,debug=T, chr="NA", c
   
   pinfo <- c();
   if(debug) {
-    cat(paste("processing chr",chr," in ",n.windows," steps [",sep=""));
+    cat(paste("processing ",chr," in ",n.windows," steps [",sep=""));
   }
   for(i in 1:n.windows) {
     s <- dr[1]+(i-1)*window.size;
@@ -1715,6 +1763,10 @@ calculate.enrichment.estimates <- function(binding.positions,signal.data=NULL,co
         
         mle <- (nfg+0.5)/(nbg+0.5);
         mle <- mle/sig.mult;
+        if(is.null(nbg)) { nbg <- numeric(0) }
+        if(is.null(nf)) { nf <- numeric(0) }
+        if(is.null(ub)) { ub <- numeric(0) }
+        if(is.null(mle)) { mle <- numeric(0) }
         return(data.frame(nbg=nbg,lb=nf,ub=ub,mle=mle))
       })
 
@@ -2187,4 +2239,100 @@ regionset.intersection.c <- function(rsl,max.val=-1,do.union=F) {
   if(do.union) { ur <- 1; } else { ur <- 0; }; 
   rl <- .Call("region_intersection",as.integer(length(rfl)),as.numeric(rfd$p),as.integer(rfd$f),as.numeric(rfd$v),as.integer(max.val),as.integer(ur));
   return(data.frame(do.call(cbind,rl)));
+}
+
+
+# idenfity if binding peak falls within a larger region of significant tag enrichment, and if so record its booundaries
+add.broad.peak.regions <- function(chip.tags,input.tags,bp,window.size=500,z.thr=2) {
+  se <- find.significantly.enriched.regions(chip.tags,input.tags,window.size=window.size,z.thr=z.thr,poisson.z=0,poisson.ratio=0,either=F)
+  chrl <- names(bp$npl); names(chrl) <- chrl;
+  bnpl <- lapply(chrl,function(chr) {
+    npl <- bp$npl[[chr]];
+    if(is.null(npl) | dim(npl)[1]<1) {
+      return(npl);
+    }
+    pi <- points.within(npl$x,se[[chr]]$s,se[[chr]]$e,return.list=T);
+    
+    pm <- do.call(rbind,lapply(pi,function(rl) {
+      if(length(rl)>0) {
+        return(range(c(se[[chr]]$s[rl],se[[chr]]$e[rl])))
+      } else {
+        return(c(NA,NA));
+      }
+    }))
+
+    npl$rs <- pm[,1];
+    npl$re <- pm[,2];
+    return(npl);
+  })
+  bp$npl <- bnpl;
+  return(bp);
+}
+
+# writing out binding results in a narrowpeak format, incorporating broad region boundaries if they are present
+# if broad region info is not present, margin is used to determine region width. The default margin is equal
+# to the window half size used to call the binding peaks
+write.narrowpeak.binding <- function(bd,fname,margin=bd$whs) {
+  if(is.null(margin)) { margin <- 50; }
+  chrl <- names(bd$npl); names(chrl) <- chrl;
+  md <- do.call(rbind,lapply(chrl,function(chr) {
+    df <- bd$npl[[chr]];
+    x <- df$x;
+    rs <- df$rs; if(is.null(rs)) { rs <- rep(NA,length(x)) }
+    re <- df$re; if(is.null(re)) { re <- rep(NA,length(x)) }
+    ivi <- which(is.na(rs)); if(any(ivi)) {rs[ivi] <- x[ivi]-margin;}
+    ivi <- which(is.na(re)); if(any(ivi)) {re[ivi] <- x[ivi]+margin;}
+    cbind(chr,rs,re,".","0",".",df$y,-1,format(df$fdr,scientific=T,digits=3),x-rs)
+  }))
+  md <- md[order(as.numeric(md[,7]),decreasing=T),]
+  write.table(md,file=fname,col.names=F,row.names=F,quote=F,sep="\t",append=F);
+}
+
+
+get.broad.enrichment.clusters <- function(signal.data,control.data,window.size=1e3,z.thr=3, tag.shift=146/2,background.density.scaling=F, ... ) {
+  # find significantly enriched clusters
+  bg.weight <- dataset.density.ratio(signal.data,control.data,background.density.scaling=background.density.scaling);
+  se <- find.significantly.enriched.regions(signal.data,control.data,window.size=window.size,z.thr=z.thr,tag.shift=tag.shift, bg.weight=bg.weight, ...)
+  chrl <- names(se); names(chrl) <- chrl;
+  se <- lapply(chrl,function(chr) {
+    d <- se[[chr]];
+    if(length(d$s>1)) {
+      d <- regionset.intersection.c(list(d,d),do.union=T);
+      sc <- points.within(abs(signal.data[[chr]]+tag.shift),d$s,d$e,return.point.counts=T);
+      cc <- points.within(abs(control.data[[chr]]+tag.shift),d$s,d$e,return.point.counts=T);
+      d$rv <- log2((sc+1)/(cc+1)/bg.weight);
+      return(d);
+    } else {
+      return(d)
+    }
+  })
+}
+
+write.broadpeak.info <- function(bp,fname) {
+  chrl <- names(bp); names(chrl) <- chrl;
+  chrl <- chrl[unlist(lapply(x,function(d) length(d$s)))>0]
+  md <- do.call(rbind,lapply(chrl,function(chr) {
+    df <- bp[[chr]];
+    cbind(chr,df$s,df$e,".","0",".",df$rv,-1,-1)
+  }))
+  md <- md[order(as.numeric(md[,7]),decreasing=T),]
+  write.table(md,file=fname,col.names=F,row.names=F,quote=F,sep="\t",append=F);
+}
+
+
+get.clusters2 <- function(x,CL)  {
+  temp <- which(diff(x) != 0)
+  begin <- c(1, temp + 1)
+  end <- c(temp, length(x))
+  size <- end - begin + 1
+
+  begin <- begin[size >= CL]
+  end <- end[size >= CL]
+  size <- size[size >= CL]
+
+  size <- size[x[end] != 0]
+  begin <- begin[x[end] != 0]
+  end <- end[x[end] != 0]
+
+  return (list(size=size,begin=begin,end=end))
 }
