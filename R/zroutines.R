@@ -185,8 +185,8 @@ remove.tag.anomalies <- function(data, bin=1,trim.fraction=1e-3,z=5,zo=3*z) {
     stt <- stt[1:(length(stt)*(1-trim.fraction))];
     mtc <- mean(stt); tcd <- sqrt(var(stt));
 
-    thr <- ceiling(mtc+z*tcd);
-    thr.o <- ceiling(mtc+zo*tcd);
+    thr <- max(1,ceiling(mtc+z*tcd));
+    thr.o <- max(1,ceiling(mtc+zo*tcd));
     # filter tt
     tt <- tt[tt>=thr]
     # get + and - tags
@@ -239,17 +239,20 @@ remove.local.tag.anomalies <- function(tags,window.size=200,eliminate.fold=10,ca
 # assess strand cross-correlation, determine peak position, determine appropriate window size
 # for binding detection.
 get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL,debug=F,min.tag.count=1e3,acceptance.z.score=3,remove.tag.anomalies=T,anomalies.z=5,accept.all.tags=F) {
-  data <- remove.tag.anomalies(data,z=anomalies.z);
+  if(remove.tag.anomalies) {
+    data <- remove.tag.anomalies(data,z=anomalies.z);
+  }
   # take highest quality tag bin
-  if(!is.null(data$quality)) {
+  if(!is.null(data$quality) & !accept.all.tags) {
     min.bin <- min(unlist(lapply(data$quality,min)))
     chrl <- names(data$tags); names(chrl) <- chrl;
     otl <- lapply(chrl,function(chr) data$tags[[chr]][data$quality[[chr]]==min.bin]);
-    # remove empty chromosomes
-    otl <- otl[unlist(lapply(otl,length))!=0];
   } else {
     otl <- data$tags;
   }
+  # remove empty chromosomes
+  otl <- otl[unlist(lapply(otl,length))!=0];
+
 
   # calculate strand scc
   if(!is.null(cluster)) {
@@ -261,7 +264,7 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
   ccl<-list(sample=cc);
   ccl.av <- lapply(names(ccl),t.plotavcc,type='l',ccl=ccl,return.ac=T,ttl=list(sample=otl),plot=F)[[1]]
   ccl.av <- data.frame(x=as.numeric(names(ccl.av)),y=as.numeric(ccl.av));
-
+  
   # find peak
   pi <- which.max(ccl.av$y);
   
@@ -557,11 +560,18 @@ get.mser.interpolation <- function(signal.data,control.data,target.fold.enrichme
   # adjust sizes in case a subset of chromosomes was used
   mser <- mser.chain.interpolation(chains=msers$chains,enrichment.background.scales=enrichment.background.scales,test.agreement=test.agreement,return.lists=T);
   sr <- sum(unlist(lapply(signal.data,length)))/mser[[1]][[1]]$n[1];
-    
+
+  # Subsampling each chain requires removing a fraction of each chromosome's
+  # tag list.  To get the exact step.size, this often leaves chromosomes with
+  # a non-integer number of tags.  The non-integer values are floored, so each
+  # chr can contribute at most 0.999.. <= 1 error to the step.size.
+  floor.error <- length(msers$chains[[1]][[1]]$npl)
   intpn <- lapply(mser,function(ms) {
     lmvo <- do.call(rbind,ms)
     lmvo$n <- lmvo$n*sr;
-    lmvo <- lmvo[lmvo$nd==lmvo$nd[1],];
+    # Don't select rows corresponding to excluded.steps
+    # Keep in mind that nd values are negative.
+    lmvo <- lmvo[lmvo$nd <= (lmvo$nd[1] + floor.error) & lmvo$nd >= (lmvo$nd[1] - floor.error),];
     lmvo <- na.omit(lmvo);
     if(any(lmvo$me==1)) {
       return(list(prediction=NA));
@@ -1541,6 +1551,7 @@ filter.binding.sites <- function(bd,tec,exclude=F) {
   lapply(chrl,function(chr) {
     cbd <- bd[[chr]];
     if(is.null(cbd)) { return(NULL) };
+    if(length(cbd)==0) { return(NULL) };
     if(dim(cbd)[1]>0) {
       ctec <- tec[[chr]];
       if(length(ctec$s)>0) {
@@ -2312,7 +2323,7 @@ get.broad.enrichment.clusters <- function(signal.data,control.data,window.size=1
 
 write.broadpeak.info <- function(bp,fname) {
   chrl <- names(bp); names(chrl) <- chrl;
-  chrl <- chrl[unlist(lapply(x,function(d) length(d$s)))>0]
+  chrl <- chrl[unlist(lapply(bp,function(d) length(d$s)))>0]
   md <- do.call(rbind,lapply(chrl,function(chr) {
     df <- bp[[chr]];
     cbind(chr,df$s,df$e,".","0",".",df$rv,-1,-1)
