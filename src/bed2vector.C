@@ -9,7 +9,7 @@
 #include <string>
 #include <functional>
 #include <utility>
-#include <hash_map>
+#include <ext/hash_map>
 #include <boost/tokenizer.hpp>
 
 extern "C" {
@@ -979,7 +979,7 @@ SEXP read_eland_mismatches(SEXP filename) {
 
       string tagname=machinename+"."+runnumber+"."+lanenumber+"."+str_x+"."+str_y;
 
-      Rprintf("machine: %s; runnumber= %s; lanenumber= %s; str_x= %s; str_y= %s;\n",machinename.c_str(),runnumber.c_str(),lanenumber.c_str(),str_x.c_str(),str_y.c_str());
+      
 
       *sit++;
       *sit++;
@@ -1001,6 +1001,7 @@ SEXP read_eland_mismatches(SEXP filename) {
 
       
       string str_pos=*sit++;
+      if(str_pos.size()<1) { continue; }
       int fpos=atoi(str_pos.c_str());
       string str_strand=*sit++;
 

@@ -2,7 +2,7 @@
 #define PC_H 1
 #include <functional>
 //#include <hash_map.h>
-#include <hash_set>
+#include <ext/hash_set>
 #include <ext/hash_map>
 
 
