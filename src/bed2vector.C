@@ -1,4 +1,5 @@
 #include "pc.h"
+#include "config.h"
 #include <vector>
 #include <string.h>
 #include <iostream>
@@ -11,6 +12,10 @@
 #include <utility>
 #include <ext/hash_map>
 #include <boost/tokenizer.hpp>
+
+#ifdef HAVE_LIBBZ2
+#include <bzlib.h>
+#endif 
 
 extern "C" {
 #include "R.h"
@@ -32,6 +37,53 @@ public:
 
 
 
+#ifdef HAVE_LIBBZ2
+int get_bzline(BZFILE* b,string& line) {
+  char c;
+  int     nBuf;
+  int bzerror=BZ_OK;
+
+  while(bzerror == BZ_OK)  {  
+    nBuf=BZ2_bzRead(&bzerror, b, &c, 1);
+    if(bzerror==BZ_OK) {
+      if(c=='\n') {
+	return bzerror;
+      } else {
+	line+=c;
+      }
+    }
+  }
+  return bzerror;
+}
+
+int get_a_line(FILE *f,BZFILE *b,int bz2file,string& line) {
+  line="";
+  if(bz2file) {
+    int bzerror=get_bzline(b,line);
+    if(bzerror==BZ_OK) {
+      return(1);
+    } else {
+      if(bzerror!=BZ_STREAM_END) {
+	cerr<<"encountered BZERROR="<<bzerror<<endl;
+      }
+      return(0);
+    }
+  } else {
+    char *cline=NULL;
+    size_t n;
+    if(getline(&cline,&n,f) != -1) {
+      if(cline) {
+	cline[strlen(cline)-1]='\0';
+	line+=cline;
+	free(cline);
+      }
+      return(1);
+    } else {
+      return(0);
+    }
+  }
+}
+#endif
 
 
 /**
@@ -1161,14 +1213,30 @@ SEXP read_eland_mismatches(SEXP filename) {
 
   
   FILE *f=fopen(fname,"rb");
-  if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
-  else {
+  if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; 
+  } else {
+#ifdef HAVE_LIBBZ2
+    BZFILE* b;  
+    int bzerror;
+    
+    int bz2file=0;
+    if(strstr(fname,".bz2")) {
+      bz2file=1;
+      b=BZ2_bzReadOpen (&bzerror, f, 0, 0, NULL, 0);
+      if (bzerror != BZ_OK)  { cout<<"bzerror="<<bzerror<<endl; }
+    }
+#endif
+
   Rprintf("opened %s\n",fname);
 
   // read in bed line
   string line;
   int fcount=0;
+#ifdef HAVE_LIBBZ2
+  while(get_a_line(f,b,bz2file,line)) {
+#else
   while(get_a_line(f,line)) {
+#endif
 
 #ifdef DEBUG  
     Rprintf("line: %s\n",line.c_str());
@@ -1244,7 +1312,11 @@ SEXP read_eland_mismatches(SEXP filename) {
       
     }
   }
-  fclose(f);
+
+#ifdef HAVE_LIBBZ2
+  BZ2_bzReadClose( &bzerror, b);
+#endif
+ fclose(f);
      
   Rprintf("done. read %d fragments\n",fcount);
   }
