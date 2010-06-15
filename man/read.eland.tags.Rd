@@ -20,6 +20,7 @@ read.eland.tags(filename, read.tag.names = F, fix.chromosome.names = T, max.elan
     longer than the sequences considred by ELAND during alignment. }
   \item{extended}{ Whether the file is written out in "extended" format
     provided in GA pipeline 1.0. }
+  \item{multi}{ Whether the file is written in "multi" format, showing multiple alignments of the reads }
 }
 \value{
   \item{tags }{ A vector of 5' tag coordinates, with negative values

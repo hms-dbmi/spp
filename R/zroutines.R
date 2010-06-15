@@ -7,11 +7,12 @@
 
 # -------- ROUTINES FOR READING IN THE DATA FILES ------------
 # fix.chromosome.names : remove ".fa" suffix from match sequence names
-read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max.eland.tag.length=-1,extended=F) {
+read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max.eland.tag.length=-1,extended=F,multi=F) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
   storage.mode(max.eland.tag.length) <- "integer";
   callfunction <- "read_eland";
   if(extended) { callfunction <- "read_eland_extended"; };
+  if(multi) { callfunction <- "read_eland_multi"; };
   tl <- lapply(.Call(callfunction,filename,rtn,max.eland.tag.length),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
@@ -52,7 +53,7 @@ read.tagalign.tags <- function(filename,fix.chromosome.names=T,fix.quality=T) {
 }
 
 
-read.arachne.tags <- function(filename,fix.chromosome.names=F) {
+read.short.arachne.tags <- function(filename,fix.chromosome.names=F) {
   tl <- lapply(.Call("read_arachne",filename),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
@@ -65,6 +66,23 @@ read.arachne.tags <- function(filename,fix.chromosome.names=F) {
   }
   # separate tags and quality
   return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
+}
+
+
+read.arachne.tags <- function(filename,fix.chromosome.names=F) {
+  tl <- lapply(.Call("read_arachne_long",filename),function(d) {
+    xo <- order(abs(d$t));
+    d$t <- d$t[xo];
+    d$n <- d$n[xo];
+    d$l <- d$l[xo];
+    return(d);
+  });
+  if(fix.chromosome.names) {
+    # remove ".fa"
+    names(tl) <- gsub("\\.fa","",names(tl))
+  }
+  # separate tags and quality
+  return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),length=lapply(tl,function(d) d$l)));
 }
 
 read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
@@ -90,12 +108,13 @@ read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
   }
 }
 
-read.helicos.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
+read.helicos.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F,include.length.info=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_indexdp",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_helicostabf",filename,rtn),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
+    d$l <- d$l[xo];
     if(read.tag.names) {
       d$s <- d$s[xo];
     }
@@ -107,12 +126,11 @@ read.helicos.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) 
   }
   # separate tags and quality
   if(read.tag.names) {
-    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),names=lapply(tl,function(d) d$s)));
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),length=lapply(tl,function(d) d$l),names=lapply(tl,function(d) d$s)));
   } else {
-    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),length=lapply(tl,function(d) d$l)));
   }
 }
-
 
 read.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
@@ -265,6 +283,7 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
   if(remove.tag.anomalies) {
     data <- remove.tag.anomalies(data,z=anomalies.z);
   }
+  
   # take highest quality tag bin
   if(!is.null(data$quality) & !accept.all.tags) {
     min.bin <- min(unlist(lapply(data$quality,min)))
@@ -472,7 +491,7 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
 
 # -------- ROUTINES FOR WRITING OUT TAG DENSITY AND ENRICHMENT PROFILES  ------------
 # calculate smoothed tag density, optionally subtracting the background
-get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3),background.density.scaling=T) {
+get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3),background.density.scaling=T,rngl=NULL) {
   chrl <- names(signal.tags); names(chrl) <- chrl;
 
   if(!is.null(control.tags)) {
@@ -481,7 +500,14 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
   
   lapply(chrl,function(chr) {
     ad <- abs(signal.tags[[chr]]+tag.shift);
-    rng <- range(ad);
+    rng <- NULL;
+    if(!is.null(rngl)) {
+      rng <- rngl[[chr]];
+    }
+    if(is.null(rng)) {
+      rng <- range(ad);
+    }
+
     ds <- densum(ad,bw=bandwidth,from=rng[1],to=rng[2],return.x=T,step=step);
     if(!is.null(control.tags)) {
       if(!is.null(control.tags[[chr]])) {
@@ -494,7 +520,9 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
 }
 
 # returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales
-get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T,background.density.scaling=T,bg.weight=NULL,posl=NULL) {
+get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T,background.density.scaling=T,bg.weight=NULL,posl=NULL,return.mle=F) {
+  # include only chromosomes with more than 2 reads
+  ftl <- ftl[unlist(lapply(ftl,length))>2]
   chrl <- names(ftl); names(chrl) <- chrl;
   if(!is.null(posl)) {
     chrl <- chrl[chrl %in% names(posl)];
@@ -518,9 +546,17 @@ get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,5
     ps[vi] <- x$ub[vi];
     ps <- log2(ps);
     if(is.null(posl)) {
-      return(data.frame(x=seq(x$x$s,x$x$e,by=x$x$step),y=ps));
+      if(return.mle) {
+        return(data.frame(x=seq(x$x$s,x$x$e,by=x$x$step),y=ps,mle=log2(x$mle),lb=log2(x$lb),ub=log2(x$ub)));
+      } else {
+        return(data.frame(x=seq(x$x$s,x$x$e,by=x$x$step),y=ps));
+      }
     } else {
-      return(data.frame(x=posl[[chr]],y=ps));
+      if(return.mle) {
+        return(data.frame(x=posl[[chr]],y=ps,mle=log2(x$mle),lb=log2(x$lb),ub=log2(x$ub)));
+      } else {
+        return(data.frame(x=posl[[chr]],y=ps));
+      }
     }
   })
 }
@@ -538,8 +574,8 @@ writewig <- function(dat,fname,feature,threshold=5,zip=F) {
   }))
   if(zip) {
     zf <- paste(fname,"zip",sep=".");
-    system(paste("zip",zf,fname));
-    system(paste("rm",fname));
+    system(paste("zip \"",zf,"\" \"",fname,"\"",sep=""));
+    system(paste("rm \"",fname,"\"",sep=""));
     return(zf);
   } else {
     return(fname);
@@ -633,8 +669,14 @@ output.binding.results <- function(results,filename) {
   chrl <- names(results$npl); names(chrl) <- chrl;
   x <- lapply(chrl,function(chr) {
     d <- results$npl[[chr]];
-    od <- cbind(rep(chr,dim(d)[1]),subset(d,select=c(x,y,evalue,fdr,enr,enr.mle)))
-    write.table(od,file=filename,col.names=F,row.names=F,sep="\t",append=T,quote=F)
+    if(dim(d)[1]>0) {
+      if(results$thr$type=="topN") {
+        od <- cbind(rep(chr,dim(d)[1]),subset(d,select=c(x,y,enr,enr.mle)))
+      } else {
+        od <- cbind(rep(chr,dim(d)[1]),subset(d,select=c(x,y,evalue,fdr,enr,enr.mle)))
+      }
+      write.table(od,file=filename,col.names=F,row.names=F,sep="\t",append=T,quote=F)
+    }
   })
 }
 
@@ -2041,9 +2083,13 @@ window.tag.count <- function(vin,window.size,window.step=1,return.x=T,from=min(v
 }
 
 # count tags in windows around specified positions (pos)
-window.tag.count.around <- function(vin,window.size,pos,return.x=T,tc=NULL) {
+window.tag.count.around <- function(vin,window.size,pos,return.x=T,tc=NULL,sorted=F) {
   if(is.null(tc)) {
     tc <- table(vin);
+  }
+  if(!sorted) {
+    op <- rank(pos);
+    pos <- sort(pos);
   }
   storage.mode(pos) <- "double";
   tpos <- as.integer(names(tc)); storage.mode(tpos) <- "double";
@@ -2054,9 +2100,17 @@ window.tag.count.around <- function(vin,window.size,pos,return.x=T,tc=NULL) {
   storage.mode(whs) <- "integer";
   twc <- .Call("cwindow_n_tags_around",tpos,tc,pos,whs);
   if(return.x) {
-    return(data.frame(x=pos,y=twc));
+    if(sorted) {
+      return(data.frame(x=pos,y=twc));
+    } else {
+      return(data.frame(x=pos[op],y=twc[op]));
+    }
   } else {
-    return(twc);
+    if(sorted) {
+      return(twc);
+    } else {
+      return(twc[op]);
+    }
   }
 }
 
