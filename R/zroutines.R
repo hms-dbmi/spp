@@ -491,11 +491,17 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
 
 # -------- ROUTINES FOR WRITING OUT TAG DENSITY AND ENRICHMENT PROFILES  ------------
 # calculate smoothed tag density, optionally subtracting the background
-get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3),background.density.scaling=T,rngl=NULL) {
+get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3),background.density.scaling=T,rngl=NULL,scale.by.dataset.size=F) {
   chrl <- names(signal.tags); names(chrl) <- chrl;
 
   if(!is.null(control.tags)) {
     bg.weight <- dataset.density.ratio(signal.tags,control.tags,background.density.scaling=background.density.scaling);
+  }
+
+  if(scale.by.dataset.size) {
+    den.scaling <- dataset.density.size(signal.tags,background.density.scaling=background.density.scaling)/1e6;
+  } else {
+    den.scaling <- 1;
   }
   
   lapply(chrl,function(chr) {
@@ -515,7 +521,7 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
         ds$y <- ds$y-bsd*bg.weight;
       }
     }
-    return(data.frame(x=seq(ds$x[1],ds$x[2],by=step),y=ds$y))
+    return(data.frame(x=seq(ds$x[1],ds$x[2],by=step),y=den.scaling*ds$y))
   })
 }
 
@@ -1980,6 +1986,20 @@ dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,back
   ntcs <- apply(ntc,2,sum);
   #print(ntcs/c(sum(unlist(lapply(d1,length))),sum(unlist(lapply(d2,length)))));
   return(ntcs[1]/ntcs[2])
+}
+
+# returns effective size of the dataset based on the same logic as dataset.density.ratio
+dataset.density.size <- function(d1,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T) {
+  if(!background.density.scaling) {
+    return(sum(unlist(lapply(d1,length))))
+  }
+
+  chrl <- names(d1);
+  ntc <- lapply(chrl,function(chr) {
+    x1 <- tag.enrichment.clusters(abs(d1[[chr]]),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
+    return(length(which(points.within(abs(d1[[chr]]),x1$s-wsize/2,x1$e+wsize/2)==-1)))
+  })
+  return(sum(unlist(ntc)))
 }
 
 old.dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T) {
