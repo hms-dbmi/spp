@@ -15,7 +15,7 @@ get.smoothed.tag.density(signal.tags, control.tags = NULL, bandwidth = 150, bg.w
 \arguments{
   \item{signal.tags}{ signal chromosome tag coordinate vectors (e.g. output
     of \code{\link{select.informative.tags}} }
-  \item{control.tags}{ optionall control (input) tags }
+  \item{control.tags}{ optional control (input) tags }
   \item{bandwidth}{ standard deviation of the Gaussian kernel }
   \item{bg.weight}{ optional weight by which the background density
     should be multipled for scaling. If not supplied, the weight is

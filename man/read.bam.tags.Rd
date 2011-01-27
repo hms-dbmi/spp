@@ -1,16 +1,17 @@
-\name{read.bowtie.tags}
-\alias{read.bowtie.tags}
+\name{read.bam.tags}
+\alias{read.bam.tags}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{ Read bowtie text alignment output file }
+\title{ Read BAM alignment file }
 \description{
-  Reads in bowtie alignment results in text format
+  Reads in aligned reads from BAM file. Note: no split (non-unique)
+  alignemnts should be reported in the BAM file.
 }
 \usage{
-read.bowtie.tags(filename, read.tag.names = F, fix.chromosome.names = F)
+read.bam.tags(filename, read.tag.names = F, fix.chromosome.names = F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{filename}{ bowtie text output file }
+  \item{filename}{ BAM file }
   \item{read.tag.names}{ Whether the tag names should be read in }
   \item{fix.chromosome.names}{ Whether to remove ".fa" from the end of
     the sequence names }

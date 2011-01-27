@@ -108,6 +108,30 @@ read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
   }
 }
 
+read.bam.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
+  if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
+  tl <- lapply(.Call("read_bam",filename,rtn),function(d) {
+    xo <- order(abs(d$t));
+    d$t <- d$t[xo];
+    d$n <- d$n[xo];
+    if(read.tag.names) {
+      d$s <- d$s[xo];
+    }
+    return(d);
+  });
+  if(fix.chromosome.names) {
+    # remove ".fa"
+    names(tl) <- gsub("\\.fa","",names(tl))
+  }
+  # separate tags and quality
+  if(read.tag.names) {
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),names=lapply(tl,function(d) d$s)));
+  } else {
+    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
+  }
+}
+
+
 read.helicos.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F,include.length.info=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
   tl <- lapply(.Call("read_helicostabf",filename,rtn),function(d) {
@@ -524,6 +548,20 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
     return(data.frame(x=seq(ds$x[1],ds$x[2],by=step),y=den.scaling*ds$y))
   })
 }
+
+# get smoothed maximum likelihood estimate of the log2 signal to control enrichment ratio
+get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight=NULL,  ... ) {
+  # determine common range
+  chrl <- intersect(names(signal.tags),names(control.tags)); names(chrl) <- chrl;
+  rngl <- lapply(chrl,function(chr) range(c(range(abs(signal.tags[[chr]]+tag.shift)),range(abs(control.tags[[chr]]+tag.shift)))))
+  ssd <- get.smoothed.tag.density(signal.tags, rngl=rngl, ..., scale.by.dataset.size=F)
+  csd <- get.smoothed.tag.density(control.tags, rngl=rngl, ..., scale.by.dataset.size=F)
+  if(is.null(bg.weight)) {
+    bg.weight <- dataset.density.ratio(signal.tags,control.tags,background.density.scaling=background.density.scaling);
+  }
+  cmle <- lapply(chrl,function(chr) { d <- ssd[[chr]]; d$y <- log2(d$y+pseudocount) - log2(csd[[chr]]$y+pseudocount) - log2(bg.weight); return(d); })
+}
+
 
 # returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales
 get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T,background.density.scaling=T,bg.weight=NULL,posl=NULL,return.mle=F) {
