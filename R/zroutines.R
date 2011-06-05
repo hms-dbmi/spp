@@ -550,10 +550,16 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
 }
 
 # get smoothed maximum likelihood estimate of the log2 signal to control enrichment ratio
-get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight=NULL,  ... ) {
+get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight=NULL, rngl=NULL, chrl=NULL, ... ) {
   # determine common range
-  chrl <- intersect(names(signal.tags),names(control.tags)); names(chrl) <- chrl;
-  rngl <- lapply(chrl,function(chr) range(c(range(abs(signal.tags[[chr]]+tag.shift)),range(abs(control.tags[[chr]]+tag.shift)))))
+  if(is.null(chrl)) {
+    chrl <- intersect(names(signal.tags),names(control.tags)); names(chrl) <- chrl;
+  }
+  if(is.null(rngl)) {
+    rngl <- lapply(chrl,function(chr) range(c(range(abs(signal.tags[[chr]]+tag.shift)),range(abs(control.tags[[chr]]+tag.shift)))))
+  } else {
+    chrl <- names(rngl); names(chrl) <- chrl;
+  }
   ssd <- get.smoothed.tag.density(signal.tags, rngl=rngl, ..., scale.by.dataset.size=F)
   csd <- get.smoothed.tag.density(control.tags, rngl=rngl, ..., scale.by.dataset.size=F)
   if(is.null(bg.weight)) {
