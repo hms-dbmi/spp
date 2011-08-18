@@ -28,6 +28,7 @@ extern "C" {
 
 #include <errno.h>   /* errno */
 #include <unistd.h>  /* ssize_t */
+ssize_t getline_local(char **lineptr, size_t *n, FILE *stream);
 }
 
 using namespace std;
@@ -77,7 +78,7 @@ int get_a_line(FILE *f,BZFILE *b,int bz2file,string& line) {
   } else {
     char *cline=NULL;
     size_t n;
-    if(getline(&cline,&n,f) != -1) {
+    if(getline_local(&cline,&n,f) != -1) {
       if(cline) {
 	cline[strlen(cline)-1]='\0';
 	line+=cline;
@@ -2634,11 +2635,11 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
 }
 
 
-extern "C" ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+
 
 /* PASTE REMAINDER AT BOTTOM OF FILE */
 ssize_t
-getline(char **linep, size_t *np, FILE *stream)
+getline_local(char **linep, size_t *np, FILE *stream)
 {
   char *p = NULL;
   size_t i = 0;
