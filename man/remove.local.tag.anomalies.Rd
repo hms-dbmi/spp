@@ -33,6 +33,10 @@ remove.local.tag.anomalies(tags, window.size = 200, eliminate.fold = 10, cap.fol
     local tag density }
   \item{z.threshold}{ Z-score used to assess significance of a given
     position exceeding either of the two density thresholds. }
+  \item{var.base}{ Minimal level of tag count variance. This is used to
+    guard against cases where variance of provided tags is near 0, as in
+  the case of datasets filtered to unclude only unique reads. Defaults
+  at 0.1}
 }
 \value{
   A modified chromosome-wise tag vector list.

@@ -13,7 +13,7 @@ read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max
   callfunction <- "read_eland";
   if(extended) { callfunction <- "read_eland_extended"; };
   if(multi) { callfunction <- "read_eland_multi"; };
-  tl <- lapply(.Call(callfunction,filename,rtn,max.eland.tag.length),function(d) {
+  tl <- lapply(.Call(callfunction,path.expand(filename),rtn,max.eland.tag.length),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -35,7 +35,7 @@ read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max
 }
 
 read.tagalign.tags <- function(filename,fix.chromosome.names=T,fix.quality=T) {
-  tl <- lapply(.Call("read_tagalign",filename),function(d) {
+  tl <- lapply(.Call("read_tagalign",path.expand(filename)),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -54,7 +54,7 @@ read.tagalign.tags <- function(filename,fix.chromosome.names=T,fix.quality=T) {
 
 
 read.short.arachne.tags <- function(filename,fix.chromosome.names=F) {
-  tl <- lapply(.Call("read_arachne",filename),function(d) {
+  tl <- lapply(.Call("read_arachne",path.expand(filename)),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -70,7 +70,7 @@ read.short.arachne.tags <- function(filename,fix.chromosome.names=F) {
 
 
 read.arachne.tags <- function(filename,fix.chromosome.names=F) {
-  tl <- lapply(.Call("read_arachne_long",filename),function(d) {
+  tl <- lapply(.Call("read_arachne_long",path.expand(filename)),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -87,7 +87,7 @@ read.arachne.tags <- function(filename,fix.chromosome.names=F) {
 
 read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_bowtie",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_bowtie",path.expand(filename),rtn),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -110,7 +110,7 @@ read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
 
 read.bam.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_bam",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_bam",path.expand(filename),rtn),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -134,7 +134,7 @@ read.bam.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
 
 read.helicos.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F,include.length.info=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_helicostabf",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_helicostabf",path.expand(filename),rtn),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -158,7 +158,7 @@ read.helicos.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F,i
 
 read.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_maqmap",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_maqmap",path.expand(filename),rtn),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -182,7 +182,7 @@ read.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
 
 read.bin.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_binmaqmap",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_binmaqmap",path.expand(filename),rtn),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -207,7 +207,7 @@ read.bin.maqmap.tags <- function(filename,read.tag.names=F,fix.chromosome.names=
 # read in tags from an extended eland format with match length information
 read.meland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_meland",filename,rtn),function(d) {
+  tl <- lapply(.Call("read_meland",path.expand(filename),rtn),function(d) {
     xo <- order(abs(d$t));
     d$t <- d$t[xo];
     d$n <- d$n[xo];
@@ -240,7 +240,8 @@ read.meland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
 # z - z-score used to determine anomalous bins
 # zo - z used to filter out one-strand matches
 # trim.fraction - fraction of top bins to discard when calculating overall background density
-remove.tag.anomalies <- function(data, bin=1,trim.fraction=1e-3,z=5,zo=3*z) {
+# var.base - minimal base variability of tag counts (for processing of flattened datasets with close to 0 variance)
+remove.tag.anomalies <- function(data, bin=1,trim.fraction=1e-3,z=5,zo=3*z,var.base=0.1) {
   
   t.remove.tag.anomalies <- function(tv,bin=1,trim.fraction=1e-3,z=5,zo=3*z,return.indecies=F) {
     tt <- table(floor(tv/bin));
@@ -248,18 +249,18 @@ remove.tag.anomalies <- function(data, bin=1,trim.fraction=1e-3,z=5,zo=3*z) {
     # trim value
     stt <- sort(as.numeric(tt));
     stt <- stt[1:(length(stt)*(1-trim.fraction))];
-    mtc <- mean(stt); tcd <- sqrt(var(stt));
+    mtc <- mean(stt); tcd <- sqrt(var(stt)+var.base);
 
     thr <- max(1,ceiling(mtc+z*tcd));
     thr.o <- max(1,ceiling(mtc+zo*tcd));
     # filter tt
-    tt <- tt[tt>=thr]
+    tt <- tt[tt>thr]
     # get + and - tags
     tp <- as.numeric(names(tt));
     pti <- tp>0;
     it <- intersect(tp[pti],(-1)*tp[!pti]);
     # add one-strand matches
-    it <- unique(c(it,tp[tt>=thr.o]));
+    it <- unique(c(it,tp[tt>thr.o]));
     sit <- c(it,(-1)*it);
     
     if(bin>1) {
