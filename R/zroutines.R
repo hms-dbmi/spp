@@ -569,6 +569,35 @@ get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146
   cmle <- lapply(chrl,function(chr) { d <- ssd[[chr]]; d$y <- log2(d$y+pseudocount) - log2(csd[[chr]]$y+pseudocount) - log2(bg.weight); return(d); })
 }
 
+# same as get.smoothed.enrichment.mle, but correcting for the backgroudnd (input) for each of the experiment
+# returns the ratio of enrichment1 to enrichment2
+# params:
+# signal.tags1,control.tags1 - per-chromosome tag lists for IP and input in experiment 1
+# signal.tags2,control.tags2 - per-chromosome tag lists for IP and input in experiment 2
+# bg.weight1,bg.weight2 - optional explicit signal/control (IP/input) normalization factors for experiments 1 and 2
+get.smoothed.enrichment.mle2 <- function(signal.tags1, control.tags1, signal.tags2,control.tags2, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight1=NULL,bg.weight2=NULL, rngl=NULL, chrl=NULL, ... ) {
+  # determine common range
+  if(is.null(chrl)) {
+    chrl <- intersect(names(signal.tags1),names(signal.tags2)); names(chrl) <- chrl;
+  }
+  if(is.null(rngl)) {
+    rngl <- lapply(chrl,function(chr) range(c(range(abs(signal.tags1[[chr]]+tag.shift)),range(abs(signal.tags2[[chr]]+tag.shift)))))
+  } else {
+    chrl <- names(rngl); names(chrl) <- chrl;
+  }
+  ssd1 <- get.smoothed.tag.density(signal.tags1, rngl=rngl, ..., scale.by.dataset.size=F)
+  ssd2 <- get.smoothed.tag.density(signal.tags2, rngl=rngl, ..., scale.by.dataset.size=F)
+  csd1 <- get.smoothed.tag.density(control.tags1, rngl=rngl, ..., scale.by.dataset.size=F)
+  csd2 <- get.smoothed.tag.density(control.tags2, rngl=rngl, ..., scale.by.dataset.size=F)
+  if(is.null(bg.weight1)) {
+    bg.weight1 <- dataset.density.ratio(signal.tags1,control.tags1,background.density.scaling=background.density.scaling);
+  }
+  if(is.null(bg.weight2)) {
+    bg.weight2 <- dataset.density.ratio(signal.tags2,control.tags2,background.density.scaling=background.density.scaling);
+  }
+  cmle <- lapply(chrl,function(chr) { d <- ssd1[[chr]]; d$y <- log2(ssd1[[chr]]$y+pseudocount) - log2(csd1[[chr]]$y+pseudocount) - log2(bg.weight1) - log2(ssd2[[chr]]$y+pseudocount) + log2(csd2[[chr]]$y+pseudocount) + log2(bg.weight2); return(d); })
+}
+
 
 # returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales
 get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,50)*fws,step=50,tag.shift=146/2,alpha=0.05,use.most.informative.scale=F,quick.calculation=T,background.density.scaling=T,bg.weight=NULL,posl=NULL,return.mle=F) {
@@ -605,6 +634,48 @@ get.conservative.fold.enrichment.profile <- function(ftl,btl,fws,bwsl=c(1,5,25,5
     } else {
       if(return.mle) {
         return(data.frame(x=posl[[chr]],y=ps,mle=log2(x$mle),lb=log2(x$lb),ub=log2(x$ub)));
+      } else {
+        return(data.frame(x=posl[[chr]],y=ps));
+      }
+    }
+  })
+}
+
+
+# same as above, controlling for input, and supporting only a single background scale
+get.conservative.fold.enrichment.profile2 <- function(ftl1,ftl2,btl1,btl2,fws,bws=1*fws,step=50,tag.shift=146/2,alpha=0.05,background.density.scaling=T,bg.weight1=NULL,bg.weight2=NULL,posl=NULL,return.mle=F) {
+  # include only chromosomes with more than 2 reads
+  ftl1 <- ftl1[unlist(lapply(ftl1,length))>2]
+  chrl <- names(ftl1); names(chrl) <- chrl;
+  if(!is.null(posl)) {
+    chrl <- chrl[chrl %in% names(posl)];
+  }
+  # calculate background tag ratio
+  if(is.null(bg.weight1)) {
+    bg.weight1 <- dataset.density.ratio(ftl1,btl1,background.density.scaling=background.density.scaling);
+  }
+  if(is.null(bg.weight2)) {
+    bg.weight2 <- dataset.density.ratio(ftl2,btl2,background.density.scaling=background.density.scaling);
+  }
+  lapply(chrl,function(chr) {
+    x <- binomial.proportion.ratio.bounds(abs(ftl1[[chr]]+tag.shift),abs(btl1[[chr]]+tag.shift),abs(ftl2[[chr]]+tag.shift),abs(btl2[[chr]]+tag.shift),fws=fws,bws=bws,step=step,bg.weight1=bg.weight1,bg.weight2=bg.weight2,alpha=alpha,pos=if(is.null(posl)) { NULL; } else { posl[[chr]] });
+
+    # compose profile showing lower bound for enriched, upper bound for depleted regions
+    ps <- rep(0,length(x$mle));
+    vi <- which(!is.na(x$lb) & x$lb>0);
+    ps[vi] <- x$lb[vi];
+    vi <- which(!is.na(x$ub) & x$ub<0);
+    ps[vi] <- x$ub[vi];
+    
+    if(is.null(posl)) {
+      if(return.mle) {
+        return(data.frame(x=x$x,y=ps,mle=x$mle,lb=x$lb,ub=x$ub));
+      } else {
+        return(data.frame(x=x$x,y=ps));
+      }
+    } else {
+      if(return.mle) {
+        return(data.frame(x=posl[[chr]],y=ps,mle=x$mle,lb=x$lb,ub=x$ub));
       } else {
         return(data.frame(x=posl[[chr]],y=ps));
       }
@@ -2017,7 +2088,7 @@ t.find.min.saturated.enr <- function(pal,thr=0.01,plot=F,return.number.of.peaks=
 
 # determine d1/d2 dataset size ratio. If background.density.scaling=F, the ratio of tag counts is returned.
 # if background.density.scaling=T, regions of significant tag enrichment are masked prior to ratio calculation.
-dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T) {
+dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T,return.proportion=F) {
   if(!background.density.scaling) {
     return(sum(unlist(lapply(d1,length)))/sum(unlist(lapply(d2,length))))
   }
@@ -2214,8 +2285,6 @@ filter.singular.positions.by.local.density <- function(tags,window.size=200,cap.
   return(tv);
 }
 
-
-
 # calculates enrichment bounds using multiple background scales
 # ft - foreground tags (pre-shifted, positive)
 # bt - background tags
@@ -2351,6 +2420,38 @@ mbs.enrichment.bounds <- function(ft,bt,fws,bwsl,step=1,rng=NULL,alpha=0.05,calc
 
     return(rl);
   }
+}
+
+# calculates binomail proportion ratio bounds 
+# returns: a list with $x, $lb vector and $mle, $ub vector
+binomial.proportion.ratio.bounds <- function(ft1,bt1,ft2,bt2,fws,bws,step=1,rng=NULL,alpha=0.05,bg.weight1=length(ft1)/length(bt1),bg.weight2=length(ft2)/length(bt2),pos=NULL,a=1.25,b=2.50) {
+  # determine range
+  if(is.null(rng)) {
+    rng <- range(range(ft1));
+  }
+  # counts
+  if(is.null(pos)) {
+    fwc1 <- window.tag.count(ft1,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
+    fwc2 <- window.tag.count(ft2,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
+    bwc1 <- window.tag.count(bt1,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
+    bwc2 <- window.tag.count(bt2,fws,window.step=step,from=rng[1],to=rng[2],return.x=T);
+    pos <- seq(fwc1$x[1],fwc1$x[2],by=fwc1$step)
+  } else {
+    fwc1 <- window.tag.count.around(ft1,bws,pos,return.x=T)
+    fwc2 <- window.tag.count.around(ft2,bws,pos,return.x=T)
+    bwc1 <- window.tag.count.around(bt1,bws,pos,return.x=T)
+    bwc2 <- window.tag.count.around(bt2,bws,pos,return.x=T)
+  }
+
+  bg.weight1 <- bg.weight1*fws/bws; bg.weight2 <- bg.weight2*fws/bws;
+  ls1 <- log2(1/(1+1/bg.weight1)); ls2 <- log2(1/(1+1/bg.weight2));
+  ltheta <- log2((fwc1$y+a-1)/(fwc1$y+bwc1$y+a+b-2)) - log2((fwc2$y+a-1)/(fwc2$y+bwc2$y+a+b-2)) - ls1 + ls2;
+
+  vltheta <- 1/((fwc1$y+a-1) + (fwc1$y+a-1)^2/(bwc1$y+b-1)) + 1/((fwc2$y+a-1) + (fwc2$y+a-1)^2/(bwc2$y+b-1))
+
+  zal <- qnorm(alpha/2,lower.tail=F);
+  
+  rl <- list(x=pos,mle=ltheta,lb=ltheta-zal*sqrt(vltheta),ub=ltheta+zal*sqrt(vltheta));
 }
 
 write.probe.wig <- function(chr,pos,val,fname,append=F,feature="M",probe.length=35,header=T) {
