@@ -310,7 +310,7 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
   }
   
   # take highest quality tag bin
-  if(!is.null(data$quality) & !accept.all.tags) {
+  if(!is.null(data$quality) && !accept.all.tags) {
     min.bin <- min(unlist(lapply(data$quality,min)))
     chrl <- names(data$tags); names(chrl) <- chrl;
     otl <- lapply(chrl,function(chr) data$tags[[chr]][data$quality[[chr]]==min.bin]);
@@ -468,7 +468,7 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
   }
 
 
-  if(!is.null(control.data) & !use.randomized.controls) {
+  if(!is.null(control.data) && !use.randomized.controls) {
     # limit both control and signal data to a common set of chromosomes
     chrl <- intersect(names(signal.data),names(control.data));
     signal.data <- signal.data[chrl];
@@ -1038,7 +1038,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
   control.predictions <- NULL;
   core.data <- list();
 
-  if(!is.null(bg.tl) & tec.filter) {
+  if(!is.null(bg.tl) && tec.filter) {
     if(debug) { cat("finding background exclusion regions ... "); }
     tec <- find.significantly.enriched.regions(bg.tl,tvl,window.size=tec.window.size,z.thr=tec.z,masking.window.size=tec.masking.window.size,poisson.z=tec.poisson.z,poisson.ratio=tec.poisson.ratio,background.density.scaling=background.density.scaling,either=T);
     if(return.core.data) {
@@ -1048,7 +1048,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
   }
 
   
-  if(is.null(threshold) & is.null(topN)) { # threshold determination is needed
+  if(is.null(threshold) && is.null(topN)) { # threshold determination is needed
     # generate control predictions
     if(!is.null(control)) {
       if(debug) { cat("determining peaks on provided",length(control),"control datasets:\n");   }
@@ -1110,7 +1110,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
       core.data <- c(core.data,list(npl.unfiltered=npl));
     }
 
-    if(!is.null(bg.tl) & tec.filter) {
+    if(!is.null(bg.tl) && tec.filter) {
       if(debug) { cat("excluding systematic background anomalies ... "); }
       npl <- filter.binding.sites(npl,tec,exclude=T);
       if(debug) { cat("done\n"); }
@@ -1119,7 +1119,13 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
     # calculate E-value and FDRs for all of the peaks
     if(debug) { cat("calculating statistical thresholds\n"); }
     chrl <- names(npl); names(chrl) <- chrl;
-    npld <- do.call(rbind,lapply(names(npl),function(chr) { k <- npl[[chr]]; if(!is.null(k) & dim(k)[1]>0) { k$chr <- rep(chr,dim(k)[1]) }; return(k) }))
+    npld <- do.call(rbind,lapply(names(npl),function(chr) {
+      k <- npl[[chr]];
+      if(!is.null(k) && dim(k)[1]>0) {
+        k$chr <- rep(chr,dim(k)[1])
+      };
+      return(k)
+    }))
     npld <- cbind(npld,get.eval.fdr.vectors(npld$y,rtp$y));
     # correct for n.randomizations
     npld$fdr <- npld$fdr/n.randomizations;
@@ -1156,7 +1162,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
 
     cat("calling binding positions using",thr$type,"threshold (",thr$root,") :\n");
     npl <- window.call.mirror.binding(tvl=tvl,min.thr=thr$root,bg.tl=bg.tl, debug=debug, ...);
-    if(!is.null(bg.tl) & tec.filter) {
+    if(!is.null(bg.tl) && tec.filter) {
       if(debug) { cat("excluding systematic background anomalies ... "); }
       npl <- filter.binding.sites(npl,tec,exclude=T);
       if(debug) { cat("done\n"); }
@@ -1176,7 +1182,7 @@ lwcc.prediction <- function(tvl,e.value=NULL, fdr=0.01, chrl=names(tvl), min.thr
   if(return.core.data) {
     return(c(list(npl=npl,thr=thr),core.data));
   }
-  if(return.control.predictions & !is.null(control.predictions)) {
+  if(return.control.predictions && !is.null(control.predictions)) {
     return(list(npl=npl,thr=thr,control.predictions=control.predictions));
   }
   return(list(npl=npl,thr=thr));
@@ -1219,7 +1225,7 @@ wtd <- function(x,y,s,e,whs=200,return.peaks=T,min.thr=5,min.dist=200,step=1,dir
   yh[as.integer(names(yt))-rx[1]+1] <- as.integer(yt);
 
   # compile background vectors
-  if(!is.null(bg.x) & length(bg.x)>0) {
+  if(!is.null(bg.x) && length(bg.x)>0) {
     bg.subtract <- 1;
 
     bg.xt <- table(bg.x);
@@ -1243,13 +1249,13 @@ wtd <- function(x,y,s,e,whs=200,return.peaks=T,min.thr=5,min.dist=200,step=1,dir
 
   # record masked positions
   if(!ignore.masking) {
-    if(!is.null(mask.x) & length(mask.x)>0) {
+    if(!is.null(mask.x) && length(mask.x)>0) {
       mvx <- unique(mask.x); mvx <- setdiff(mvx,as.numeric(names(xt)));
       mvx <- mvx[mvx>=rx[1] & mvx<=rx[2]];
       xh[mvx-rx[1]+1] <- -1;
     }
 
-    if(!is.null(mask.y) & length(mask.y)>0) {
+    if(!is.null(mask.y) && length(mask.y)>0) {
       mvy <- unique(mask.y); mvy <- setdiff(mvy,as.numeric(names(yt)));
       mvy <- mvy[mvy>=rx[1] & mvy<=rx[2]];
       yh[mvy-rx[1]+1] <- -1;
@@ -1386,7 +1392,7 @@ lwcc <- function(x,y,s,e,whs=100,isize=20,return.peaks=T,min.thr=1,min.dist=100,
   yh[as.integer(names(yt))-rx[1]+1] <- as.integer(yt);
 
   # compile background vectors
-  if(!is.null(bg.x) & length(bg.x)>0) {
+  if(!is.null(bg.x) && length(bg.x)>0) {
     bg.subtract <- 1;
 
     bg.xt <- table(bg.x);
@@ -1407,14 +1413,14 @@ lwcc <- function(x,y,s,e,whs=100,isize=20,return.peaks=T,min.thr=1,min.dist=100,
   }
 
   # record masked positions
-  if(!is.null(mask.x) & length(mask.x)>0) {
+  if(!is.null(mask.x) && length(mask.x)>0) {
     mvx <- unique(mask.x); mvx <- setdiff(mvx,as.numeric(names(xt)));
     mvx <- mvx[mvx>=rx[1] & mvx<=rx[2]];
     
     xh[mvx-rx[1]+1] <- -1;
   }
 
-  if(!is.null(mask.y) & length(mask.y)>0) {
+  if(!is.null(mask.y) && length(mask.y)>0) {
     mvy <- unique(mask.y); mvy <- setdiff(mvy,as.numeric(names(yt)));
     mvy <- mvy[mvy>=rx[1] & mvy<=rx[2]];
     yh[mvy-rx[1]+1] <- -1;
@@ -1789,7 +1795,7 @@ get.subsample.chain.calls <- function(signal.data,control.data,n.steps=NULL,step
       n.steps <- floor(sum(unlist(lapply(signal.data,length)))/step.size)
     }
   }
-  if(subsample.control & !is.null(control.data)) {
+  if(subsample.control && !is.null(control.data)) {
     # normalize control to the signal size
     if(debug) { cat("pre-subsampling control.\n"); }
     bg.weight <- sum(unlist(lapply(signal.data,length)))/sum(unlist(lapply(control.data,length)))
@@ -1817,7 +1823,7 @@ get.subsample.chain.calls <- function(signal.data,control.data,n.steps=NULL,step
     }
     if(debug) { cat("chained subsampling using fraction",f,".\n"); }
     signal.data <- lapply(signal.data,function(d) sample(d,length(d)*f));
-    if(subsample.control & !is.null(control.data)) {
+    if(subsample.control && !is.null(control.data)) {
       control.data <- lapply(control.data,function(d) sample(d,length(d)*f));
     }
     sz <- sum(unlist(lapply(signal.data,length)));
