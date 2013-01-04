@@ -15,8 +15,8 @@ characterizing saturation properties related to sequencing depth.
 \tabular{ll}{
 Package: \tab spp\cr
 Type: \tab Package\cr
-Version: \tab 1.8\cr
-Date: \tab 2008-11-14\cr
+Version: \tab 1.11\cr
+Date: \tab 2012-06-20\cr
 License: \tab What license is it under?\cr
 LazyLoad: \tab yes\cr
 }
