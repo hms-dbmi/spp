@@ -524,7 +524,7 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
   }
 
   if(scale.by.dataset.size) {
-    den.scaling <- dataset.density.size(signal.tags,background.density.scaling=background.density.scaling)/1e6;
+    den.scaling <- 1/(dataset.density.size(signal.tags,background.density.scaling=background.density.scaling)/1e6);
   } else {
     den.scaling <- 1;
   }
