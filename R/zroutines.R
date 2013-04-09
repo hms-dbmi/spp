@@ -566,7 +566,7 @@ get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146
   if(is.null(bg.weight)) {
     bg.weight <- dataset.density.ratio(signal.tags,control.tags,background.density.scaling=background.density.scaling);
   }
-  cmle <- lapply(chrl,function(chr) { d <- ssd[[chr]]; d$y <- log2(d$y+pseudocount) - log2(csd[[chr]]$y+pseudocount) - log2(bg.weight); return(d); })
+  cmle <- lapply(chrl,function(chr) { d <- ssd[[chr]]; d$y <- log2(d$y+pseudocount*bg.weight) - log2(csd[[chr]]$y+pseudocount) - log2(bg.weight); return(d); })
 }
 
 # same as get.smoothed.enrichment.mle, but correcting for the backgroudnd (input) for each of the experiment
@@ -595,7 +595,7 @@ get.smoothed.enrichment.mle2 <- function(signal.tags1, control.tags1, signal.tag
   if(is.null(bg.weight2)) {
     bg.weight2 <- dataset.density.ratio(signal.tags2,control.tags2,background.density.scaling=background.density.scaling);
   }
-  cmle <- lapply(chrl,function(chr) { d <- ssd1[[chr]]; d$y <- log2(ssd1[[chr]]$y+pseudocount) - log2(csd1[[chr]]$y+pseudocount) - log2(bg.weight1) - log2(ssd2[[chr]]$y+pseudocount) + log2(csd2[[chr]]$y+pseudocount) + log2(bg.weight2); return(d); })
+  cmle <- lapply(chrl,function(chr) { d <- ssd1[[chr]]; d$y <- log2(ssd1[[chr]]$y+pseudocount*bg.weight1) - log2(csd1[[chr]]$y+pseudocount) - log2(bg.weight1) - log2(ssd2[[chr]]$y+pseudocount*bg.weight2) + log2(csd2[[chr]]$y+pseudocount) + log2(bg.weight2); return(d); })
 }
 
 
