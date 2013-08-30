@@ -517,7 +517,10 @@ find.binding.positions <- function(signal.data,f=1,e.value=NULL,fdr=NULL, masked
 # -------- ROUTINES FOR WRITING OUT TAG DENSITY AND ENRICHMENT PROFILES  ------------
 # calculate smoothed tag density, optionally subtracting the background
 get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150,bg.weight=NULL,tag.shift=146/2,step=round(bandwidth/3),background.density.scaling=T,rngl=NULL,scale.by.dataset.size=F) {
-  chrl <- names(signal.tags); names(chrl) <- chrl;
+  chrl <- names(signal.tags);
+  if(!is.null(rngl)) { chrl <- names(rngl); }
+  names(chrl) <- chrl;
+  
 
   if(!is.null(control.tags)) {
     bg.weight <- dataset.density.ratio(signal.tags,control.tags,background.density.scaling=background.density.scaling);
