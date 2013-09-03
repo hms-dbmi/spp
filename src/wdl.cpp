@@ -171,7 +171,7 @@ extern "C" {
       
 	// calculate the means
 	double mp=((double)(pn1+pn2))/rs;
-	double mn=((double)(pn1+pn2))/rs;
+	double mn=((double)(nn1+nn2))/rs;
 #ifdef DEBUG  
 	Rprintf("mp=%f mn=%f\n",mp,mn);
 #endif
