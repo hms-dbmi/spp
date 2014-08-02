@@ -522,7 +522,7 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
   names(chrl) <- chrl;
   
 
-  if(!is.null(control.tags)) {
+  if(!is.null(control.tags) && is.null(bg.weight)) {
     bg.weight <- dataset.density.ratio(signal.tags,control.tags,background.density.scaling=background.density.scaling);
   }
 
