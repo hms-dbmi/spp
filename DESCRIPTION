@@ -1,10 +1,11 @@
 Package: spp
 Type: Package
 Title: some description
-Version: 1.11
-Date: 2013-01-04
+Version: 1.12
+Date: 2015-08-21
 Author: Peter K
 Depends: caTools
+Imports: Rsamtools
 Maintainer: peterK<peter.kharchenko@post.harvard.edu>
 Description: Describe the package
 License: GPL-2

@@ -109,26 +109,31 @@ read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
 }
 
 read.bam.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
-  if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
-  tl <- lapply(.Call("read_bam",path.expand(filename),rtn),function(d) {
-    xo <- order(abs(d$t));
-    d$t <- d$t[xo];
-    d$n <- d$n[xo];
-    if(read.tag.names) {
-      d$s <- d$s[xo];
-    }
-    return(d);
-  });
+  #require(Rsamtools)
+  if(!is.element("fastcluster", installed.packages()[, 1])) {
+    stop("Rsamtools Bioconductor package is now required for BAM file support. Please install")
+  }
+  
+  ww <- c("flag","rname","pos","isize","strand","mapq","qwidth"); if(read.tag.names) { ww <- c(ww,"qname") };
+  bam <- Rsamtools::scanBam(filename,param=Rsamtools::ScanBamParam(what=ww,flag=Rsamtools::scanBamFlag(isUnmappedQuery=FALSE)))[[1]];
+  strm <- as.integer(bam$strand=="+")
+  if(any(bitwAnd(bam$flag,0x1))) { # paired-end data
+    pos <- tapply(1:length(bam$pos),bam$rname,function(ii) na.omit(strm[ii]*bam$pos[ii] - (1-strm[ii])*(bam$pos[ii]+bam$isize[ii])))
+    # alternatively, handle reads with NA isize (unpaired?) just like single-ended reads
+    #pos <- tapply(1:length(bam$pos),bam$rname,function(ii) ifelse(is.na(bam$isize[ii]), bam$pos[ii]*strm[ii]  - (1-strm[ii])*(bam$pos[ii]+bam$qwidth[ii]), strm[ii]*bam$pos[ii] - (1-strm[ii])*(bam$pos[ii]+bam$isize[ii])))
+  } else {
+    pos <- tapply(1:length(bam$pos),bam$rname,function(ii) bam$pos[ii]*strm[ii]  - (1-strm[ii])*(bam$pos[ii]+bam$qwidth[ii]))
+  }
+
+  rl <- list(tags=pos,quality=tapply(1:length(bam$pos),bam$rname,function(ii) bam$mapq[ii]))
+  if(read.tag.names) {
+    rl <- c(rl,list(names=tapply(1:length(bam$pos),bam$rname,function(ii) bam$qname[ii])))
+  }
   if(fix.chromosome.names) {
     # remove ".fa"
-    names(tl) <- gsub("\\.fa","",names(tl))
+    names(rl) <- gsub("\\.fa","",names(rl))
   }
-  # separate tags and quality
-  if(read.tag.names) {
-    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n),names=lapply(tl,function(d) d$s)));
-  } else {
-    return(list(tags=lapply(tl,function(d) d$t),quality=lapply(tl,function(d) d$n)));
-  }
+  return(rl)
 }
 
 
