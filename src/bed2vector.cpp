@@ -10,7 +10,6 @@
 #include <string>
 #include <functional>
 #include <utility>
-#include <ext/hash_map>
 #include <boost/tokenizer.hpp>
 
 #ifdef HAVE_LIBBZ2

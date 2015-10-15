@@ -31,6 +31,47 @@ void cdensum(int *n, double *pos, double *tc, double *spos, int *bw,int *dw, int
     }
   }
 }
+// .Call version of the above
+SEXP ccdensum(SEXP pos_R, SEXP tc_R, SEXP spos_R, SEXP bw_R, SEXP dw_R, SEXP npos_R, SEXP step_R) {
+  double* pos=REAL(pos_R);
+  double* tc=REAL(tc_R);
+  int n=LENGTH(pos_R);
+  int bw=*INTEGER(bw_R);
+  int dw=*INTEGER(dw_R);
+  double spos=*REAL(spos_R);
+  int npos=*INTEGER(npos_R);
+  int step=*INTEGER(step_R);
+  int i,j;
+  
+  // allocate return array
+  SEXP out_R;
+  PROTECT(out_R=allocVector(REALSXP,npos));
+  double* dout=REAL(out_R);
+  for(i = 0; i< npos; i++) {
+    dout[i]=0;
+  }
+
+  
+ 
+  double dbw=(double) bw;
+  for(i = 0; i< n; i++) {
+    // size of the window to which the contributions should be added
+    int in=(int) (pos[i]- spos);
+    int ic=tc[i];
+    int whs=dw*bw*ic;
+    int ws=(int) floor((in-whs)/(step));
+    int we=(int) ceil((in+whs)/(step));
+    if(ws<0) { ws=0; } 
+    if(we>= npos) { we= npos -1; }
+    
+    for(j=ws;j<we;j++) {
+      double beta=((double)(j*(step)-in))/dbw;
+      dout[j]+=((double)ic)*exp(-0.5*beta*beta);
+    }
+  }
+  UNPROTECT(1);
+  return(out_R);
+}
 
 
 // window tag counts
