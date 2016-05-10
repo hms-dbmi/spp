@@ -122,8 +122,10 @@ read.bam.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
   bam <- Rsamtools::scanBam(filename,param=Rsamtools::ScanBamParam(what=ww,flag=Rsamtools::scanBamFlag(isUnmappedQuery=FALSE)))[[1]];
   strm <- as.integer(bam$strand=="+")
   if(any(bitwAnd(bam$flag,0x1))) { # paired-end data
-    rl <- list(tags=tapply(1:length(bam$pos),bam$rname,function(ii) as.numeric(na.omit(strm[ii]*bam$pos[ii] - (1-strm[ii])*(bam$pos[ii]+bam$isize[ii])))),
-               flen=tapply(1:length(bam$pos),bam$rname,function(ii) as.numeric(na.omit(abs(bam$isize[ii])))))
+    # use only positive strand mappings
+    posvi <- which(strm==1);
+    rl <- list(tags=tapply(posvi,bam$rname[posvi],function(ii) as.numeric(bam$pos[ii])),
+               flen=tapply(posvi,bam$rname[posvi],function(ii) as.numeric(abs(bam$isize[ii]))))
     # alternatively, handle reads with NA isize (unpaired?) just like single-ended reads
     #pos <- tapply(1:length(bam$pos),bam$rname,function(ii) ifelse(is.na(bam$isize[ii]), bam$pos[ii]*strm[ii]  - (1-strm[ii])*(bam$pos[ii]+bam$qwidth[ii]), strm[ii]*bam$pos[ii] - (1-strm[ii])*(bam$pos[ii]+bam$isize[ii])))
   } else {
