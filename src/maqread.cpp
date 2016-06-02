@@ -12,8 +12,8 @@
 #include <zlib.h>
 
 extern "C" {
-#include "R.h"
-#include "Rmath.h"
+//#include "R.h"
+//#include "Rmath.h"
 #include "Rinternals.h"
 #include "Rdefines.h"
 #include "maqmap.h"

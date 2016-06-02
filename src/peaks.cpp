@@ -3,10 +3,12 @@
 #include <iostream>
 #include <string>
 #include <set>
+#include <cmath>
+#include <cstdlib>
 
 extern "C" {
-#include "R.h"
-#include "Rmath.h"
+//#include "R.h"
+//#include "Rmath.h"
 #include "Rinternals.h"
 #include "Rdefines.h"
 }
@@ -108,14 +110,14 @@ extern "C" {
     
     for(int i=0;i<nd;i++) {
       // increment k until pos[k]+size>=d[i]
-      while((abs(pos[k])+size) < d[i]) { k++; if(k==npos) { break; };
+      while((std::abs(pos[k])+size) < d[i]) { k++; if(k==npos) { break; };
 #ifdef DEBUG  
 	Rprintf("advancing k to %d\n",k);
 #endif
       }
       if(k==npos) { break; };
       // increment i until d[i]>=pos[k]-size
-      while((abs(pos[k])-size) > d[i]) { i++; if(i==nd) { break; }
+      while((std::abs(pos[k])-size) > d[i]) { i++; if(i==nd) { break; }
 #ifdef DEBUG  
 	Rprintf("advancing i to %d\n",i);
 #endif
@@ -124,14 +126,14 @@ extern "C" {
 
 
       int l=k;
-      while((l<npos) && ((abs(pos[l])-size) <= d[i])) { l++; 
+      while((l<npos) && ((std::abs(pos[l])-size) <= d[i])) { l++; 
 #ifdef DEBUG  
 	Rprintf("advancing l to %d\n",l);
 #endif
       }
       for(int j=k;j<l;j++) {
-	int pd=d[i]-abs(pos[j]);
-	if(abs(pd)<=size) {
+	int pd=d[i]-std::abs(pos[j]);
+	if(std::abs(pd)<=size) {
 	  // record
 	  if(pos[j]>0) {
 	    x.push_back(pd);
@@ -698,9 +700,9 @@ extern "C" {
       // update flags
       int f=flags[i];
       if(f>0) {
-	s[abs(f)-1]++;
+	s[std::abs(f)-1]++;
       } else {
-	s[abs(f)-1]--;
+	s[std::abs(f)-1]--;
       }
       
       if(max_val!=0 && val[i]*max_val > mval*max_val) { mval=val[i]; }
