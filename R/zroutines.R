@@ -114,7 +114,7 @@ read.bowtie.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
 
 read.bam.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
   #require(Rsamtools)
-  if(!is.element("fastcluster", installed.packages()[, 1])) {
+  if(!is.element("Rsamtools", installed.packages()[, 1])) {
     stop("Rsamtools Bioconductor package is now required for BAM file support. Please install")
   }
   
