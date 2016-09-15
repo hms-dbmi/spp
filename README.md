@@ -3,7 +3,7 @@ An [R](https://www.r-project.org/) package for anlaysis of ChIP-seq and other fu
 Please see [package homepage](http://compbio.med.harvard.edu/Supplements/ChIP-seq/) for details.
 
 ## Requirements
-A unix-flavored OS with R and [Boost C++](http://www.boost.org/) installed.
+A unix-flavored OS with R and [Boost C++](https://www.boost.org/) installed.
 
 ## Installation
 You can use modtools to install SPP:
