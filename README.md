@@ -16,7 +16,7 @@ Alternatively, download a .tar.gz containing the [latest release](https://github
 R CMD INSTALL spp_1.13.tar.gz
 ```
 
-Note: if Boost libraries are installed in non-standard location, please specify the location in a BOOST_ROOT environment variable prior to running the installation.
+Note: if Boost libraries are installed in non-standard location, please specify the location in a BOOST\_ROOT environment variable prior to running the installation.
 ```
 export BOOST_ROOT=/path/boost_1_58_0/
 ```
