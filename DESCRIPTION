@@ -7,7 +7,7 @@ Author: Peter K
 Depends: caTools
 Imports: Rsamtools
 Maintainer: peterK <peter.kharchenko@post.harvard.edu>
-Description: Describe the package
+Description: R package for anlaysis of ChIP-seq and other functional sequencing data
 License: GPL-2
 LazyLoad: yes
 Packaged: Wed Nov 12 10:42:54 2008; vidhuch
