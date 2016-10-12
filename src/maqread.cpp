@@ -19,7 +19,6 @@ extern "C" {
 }
 
 using namespace std;
-using namespace __gnu_cxx; 
 
 
 class lessAbsoluteValue {

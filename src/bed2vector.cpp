@@ -30,7 +30,6 @@ ssize_t getline_local(char **lineptr, size_t *n, FILE *stream);
 }
 
 using namespace std;
-using namespace __gnu_cxx; 
 
 
 class lessAbsoluteValue {
