@@ -54,7 +54,7 @@ extern "C" {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  unordered_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -88,7 +88,7 @@ extern "C" {
     
 
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      unordered_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
