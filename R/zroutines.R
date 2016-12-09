@@ -120,6 +120,7 @@ read.bam.tags <- function(filename,read.tag.names=F,fix.chromosome.names=F) {
   
   ww <- c("flag","rname","pos","isize","strand","mapq","qwidth"); if(read.tag.names) { ww <- c(ww,"qname") };
   bam <- Rsamtools::scanBam(filename,param=Rsamtools::ScanBamParam(what=ww,flag=Rsamtools::scanBamFlag(isUnmappedQuery=FALSE)))[[1]];
+  if(is.null(bam$pos) || length(bam$pos)==0) { return(rl(tags=c(),quality=c())) }
   strm <- as.integer(bam$strand=="+")
   if(any(bitwAnd(bam$flag,0x1))) { # paired-end data
     # use only positive strand mappings
