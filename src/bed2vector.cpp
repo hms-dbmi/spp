@@ -11,7 +11,6 @@
 #include <functional>
 #include <utility>
 #include <boost/tokenizer.hpp>
-#include <hash_map>  
 
 #ifdef HAVE_LIBBZ2
 #include <bzlib.h>
@@ -116,7 +115,7 @@ SEXP read_bed_ends(SEXP filename) {
   vector< vector<int> > pos;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>, equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
 
   typedef boost::tokenizer<boost::char_separator<char> >  tokType;
@@ -161,7 +160,7 @@ SEXP read_bed_ends(SEXP filename) {
       }
 
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -252,7 +251,7 @@ SEXP read_meland_old(SEXP filename) {
   vector< vector<int> > poslen; // length
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -294,7 +293,7 @@ SEXP read_meland_old(SEXP filename) {
       int fpos=atoi(str_pos.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -430,7 +429,7 @@ SEXP read_meland_old(SEXP filename) {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -474,7 +473,7 @@ SEXP read_meland_old(SEXP filename) {
       int fpos=atoi(str_pos.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -622,7 +621,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   vector< vector<int> > mm2; // position of the second mismatch
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -690,7 +689,7 @@ SEXP read_eland_mismatches(SEXP filename) {
       }
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -815,7 +814,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -866,7 +865,7 @@ SEXP read_eland_mismatches(SEXP filename) {
       }
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1002,7 +1001,7 @@ SEXP read_eland_mismatches(SEXP filename) {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -1076,7 +1075,7 @@ SEXP read_eland_mismatches(SEXP filename) {
       }
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1211,7 +1210,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -1364,7 +1363,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       }
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1498,7 +1497,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -1573,7 +1572,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
 
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1712,7 +1711,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -1790,7 +1789,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       int nm=atoi(str_ndel.c_str())+atoi(str_nins.c_str())+atoi(str_nsub.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1939,7 +1938,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -1982,7 +1981,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       }
 
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -2117,7 +2116,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<int> > posnm; // number of mismatches
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -2159,7 +2158,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       int nm=atoi(str_qual.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -2268,7 +2267,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<int> > posnm; // number of mismatches
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -2327,7 +2326,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -2439,7 +2438,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<int> > poslen; // length of the match
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -2528,7 +2527,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       
       
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome

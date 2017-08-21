@@ -10,7 +10,6 @@
 #include <functional>
 #include <utility>
 #include <zlib.h>
-#include <hash_map>  
 
 extern "C" {
 //#include "R.h"
@@ -56,7 +55,7 @@ extern "C" {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, std::hash<string>,equal_to<string> > cind_map;
+  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
   vector<string> cnames;
   
 
@@ -90,7 +89,7 @@ extern "C" {
     
 
       // determine the chromosome index
-      hash_map<string, int, std::hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
