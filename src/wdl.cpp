@@ -14,7 +14,6 @@ extern "C" {
 }
 
 using namespace std;
-using namespace __gnu_cxx; 
 
 //#define DEBUG 1
 

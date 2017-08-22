@@ -14,7 +14,6 @@ extern "C" {
 }
 
 using namespace std;
-using namespace __gnu_cxx; 
 
 /**
  * Calculate all local peaks
