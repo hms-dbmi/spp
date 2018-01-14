@@ -928,7 +928,7 @@ t.plotcc <- function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag", pch=19, 
   }
   
   # plot chromosome-acerage cross-correlation 
-  t.plotavcc <- function(ci, main=paste(ci,"chromosome average"), ccl=tl.cc, return.ac=F, ttl=tl, plot=T, ... ) {
+  t.plotavcc <- function(ci, main=paste(ci,"chromosome average"), ccl, return.ac=F, ttl, plot=T, ... ) {
     cc <- ccl[[ci]];
     if(length(cc)==1)  { return(cc[[1]]) };
     if(length(cc)==0) { return(c()) };
@@ -947,14 +947,14 @@ t.plotcc <- function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag", pch=19, 
     if(return.ac) { return(ac) }
   }
 
-  t.plotchrcc <- function(ci,ncol=4, ccl=tl.cc, ... ) {
+  t.plotchrcc <- function(ci,ncol=4, ccl, ... ) {
     cc <- ccl[[ci]];
     ac <- do.call(rbind,cc);
     par(mfrow = c(length(cc)/ncol,ncol), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.8)
     lapply(names(cc),function(ch) { t.plotcc(cc[[ch]],main=paste(ci,": chr",ch,sep=""), ...) })
   }
 
-  t.plotavccl <- function(ci, ccl=tl.ccl, main=paste(ci,"chromosome average"), rtl=tl, ... ) {
+  t.plotavccl <- function(ci, ccl, main=paste(ci,"chromosome average"), rtl, ... ) {
     #cc <- lapply(ccl[[ci]],function(x) { if(!is.null(x$M)) { x$M <- NULL;}; return(x); });
     cc <- ccl[[ci]];
     chrs <- names(cc[[1]]); names(chrs) <- chrs;
@@ -965,7 +965,7 @@ t.plotcc <- function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag", pch=19, 
     t.plotcc(acl, main=main, ...);
   }
   
-  t.plotchrccl <- function(ci,ccl=tl.ccl,ncol=4, ... ) {
+  t.plotchrccl <- function(ci,ccl,ncol=4, ... ) {
     par(mfrow = c(length(cc[[1]])/ncol,ncol), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.8)
     lapply(names(cc[[1]]),function(ch) { t.plotcc(lapply(cc,function(x) x[[ch]]),main=paste(ci,": chr",ch,sep=""), ...) })
   }
@@ -2207,7 +2207,8 @@ densum <- function(vin,bw=5,dw=3,match.wt.f=NULL,return.x=T,from=min(vin),to=max
   } else {
     dout <- numeric(dlength); storage.mode(dout) <- "double";
     storage.mode(dlength) <- "integer";
-    .C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout,DUP=F);
+    #.C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout,DUP=F);
+    .C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout);
   }
   
   
