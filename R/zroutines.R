@@ -1693,7 +1693,8 @@ determine.lwcc.threshold <- function(tvl,chrl=names(tvl),e.value=100, n.randomiz
 points.within <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F) {
   if(is.null(x) | length(x) < 1) { return(c()) };
   if(!sorted) {
-    ox <- rank(x,ties="first");
+    #ox <- rank(x,ties="first");
+    ox <- rank(x,ties.method="first");
     x <- sort(x);
   }
 
