@@ -24,8 +24,8 @@ writewig(dat, fname, feature, threshold = 5, zip = F)
 
 \seealso{ ~~objects to See Also as \code{\link{help}}, ~~~ }
 \examples{
-
-data <- list("chr1"=data.frame(x=c(100,130,200),y=c(1.2,4.0,2.3)));
-writewig(data,"filename");
-
+\dontrun{
+  data <- list("chr1"=data.frame(x=c(100,130,200),y=c(1.2,4.0,2.3)));
+  writewig(data,"filename");
+  }
 }

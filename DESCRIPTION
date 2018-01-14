@@ -1,4 +1,4 @@
-Package: SPP
+Package: spp
 Type: Package
 Title: ChIP-seq processing pipeline
 Version: 1.14

@@ -8,7 +8,16 @@
   has stabilized enough to meet the saturation criteria.
 }
 \usage{
-get.mser(signal.data, control.data, n.chains = 5, step.size = 1e+05, chains = NULL, cluster = NULL, test.agreement = 0.99, return.chains = F, enrichment.background.scales = c(1), n.steps = 1, ...)
+get.mser(signal.data, 
+  control.data, 
+  n.chains = 5, 
+  step.size = 1e+05, 
+  chains = NULL, 
+  cluster = NULL, 
+  test.agreement = 0.99, 
+  return.chains = F, 
+  enrichment.background.scales = c(1), 
+  n.steps = 1, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -38,6 +47,7 @@ get.mser(signal.data, control.data, n.chains = 5, step.size = 1e+05, chains = NU
   multiple MSER estimates will be returned.}
   \item{\dots}{ additional parameters should be the same as those passed
   to the \code{\link{find.binding.positions}}}
+  \item{n.steps}{n.steps}
 }
 \value{
   A single, or multple (if multiple \code{enrichment.background.scales} were

@@ -9,7 +9,15 @@
   density is returned.
 }
 \usage{
-get.smoothed.tag.density(signal.tags, control.tags = NULL, bandwidth = 150, bg.weight = NULL, tag.shift = 146/2, step = round(bandwidth/3))
+get.smoothed.tag.density(signal.tags, 
+  control.tags = NULL, 
+  bandwidth = 150, 
+  bg.weight = NULL, 
+  tag.shift = 146/2, 
+  step = round(bandwidth/3),
+  background.density.scaling = T,
+  rngl = NULL, 
+  scale.by.dataset.size = F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -31,6 +39,8 @@ get.smoothed.tag.density(signal.tags, control.tags = NULL, bandwidth = 150, bg.w
     signal to control datasets (to estimate ratio of the background tag
     density). If FALSE, the dataset ratio will be equal to the ratio of
     the number of tags in each dataset.}
+  \item{rngl}{rngl}
+  \item{scale.by.dataset.size}{scale.by.dataset.size}
 }
 \value{
   A list of elements corresponding to chromosomes, with each element
@@ -40,6 +50,15 @@ get.smoothed.tag.density(signal.tags, control.tags = NULL, bandwidth = 150, bg.w
 }
 \seealso{ \code{\link{writewig}} }
 \examples{
-  smoothed.density <- get.smoothed.tag.density(chip.data,control.tags=input.data,bandwidth=200,step=100,tag.shift=round(binding.characteristics$peak$x/2));
-  writewig(smoothed.density,"example.density.wig","Example smoothed, background-subtracted tag density");
+\dontrun{
+  smoothed.density <- get.smoothed.tag.density(chip.data,
+    control.tags=input.data,
+    bandwidth=200,
+    step=100,
+    tag.shift=round(binding.characteristics$peak$x/2));
+  
+  writewig(smoothed.density,
+    "example.density.wig",
+    "Example smoothed, background-subtracted tag density");
+    }
 }

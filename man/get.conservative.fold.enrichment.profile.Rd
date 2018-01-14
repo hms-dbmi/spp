@@ -15,7 +15,19 @@
   chosen for each point. 
 }
 \usage{
-get.conservative.fold.enrichment.profile(ftl, btl, fws, bwsl = c(1, 5, 25, 50) * fws, step = 50, tag.shift = 146/2, alpha = 0.05, use.most.informative.scale = F, quick.calculation = T)
+  get.conservative.fold.enrichment.profile(ftl, 
+    btl, 
+    fws, 
+    bwsl = c(1, 5, 25, 50) * fws, 
+    step = 50, 
+    tag.shift = 146/2, 
+    alpha = 0.05, 
+    use.most.informative.scale = F, 
+    quick.calculation = T,
+    background.density.scaling = T, 
+    bg.weight = NULL, 
+    posl= NULL, 
+    return.mle = F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -41,6 +53,11 @@ get.conservative.fold.enrichment.profile(ftl, btl, fws, bwsl = c(1, 5, 25, 50) *
     signal to control datasets (to estimate ratio of the background tag
     density). If FALSE, the dataset ratio will be equal to the ratio of
     the number of tags in each dataset.}
+  \item{bg.weight}{ optional weight by which the background density
+    should be multipled for scaling. If not supplied, the weight is
+    calculated based on the ratio of the reduced ChIP to input dataset sizes. }
+  \item{posl}{posl}
+  \item{return.mle}{return.mle}
 }
 \value{
   A list of elements corresponding to chromosomes, with each element
@@ -54,6 +71,14 @@ get.conservative.fold.enrichment.profile(ftl, btl, fws, bwsl = c(1, 5, 25, 50) *
   rates", Comp. Stat & Data Anal. 32(2000) 345}
 \seealso{ \code{\link{get.smoothed.tag.density}} }
 \examples{
-  enrichment.estimates <- get.conservative.fold.enrichment.profile(chip.data,input.data,fws=2*binding.characteristics$whs,step=100,alpha=0.01);
-  writewig(enrichment.estimates,"example.enrichment.estimates.wig","Example conservative fold-enrichment/depletion estimates shown on log2 scale");
+\dontrun{
+    enrichment.estimates <- get.conservative.fold.enrichment.profile(chip.data,
+      input.data,
+      fws=2*binding.characteristics$whs,
+      step=100,
+      alpha=0.01);
+    writewig(enrichment.estimates,
+      "example.enrichment.estimates.wig",
+      "Example conservative fold-enrichment/depletion estimates shown on log2 scale");
+  }
 }

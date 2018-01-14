@@ -11,13 +11,13 @@
   Note: since v1.13, FDR is written out in -log10() scale.
 }
 \usage{
-write.narrowpeak.binding(results, filename,margin=results$whs)
+write.narrowpeak.binding(bd, fname, margin=bd$whs, npeaks)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{results}{ output of the \code{\link{find.binding.positions}} }
-  \item{filename}{ file name }
-  \item{margin}{ explicit value of the margin to be used if the borad
+  \item{bd}{ output of the \code{\link{find.binding.positions}} }
+  \item{fname}{ file name }
+  \item{margin}{ explicit value of the margin to be used if the broad
     region information is absent (defaults to peak detection window
     half-size}
   \item{npeaks}{ optionally, limit the output to the specified number of
