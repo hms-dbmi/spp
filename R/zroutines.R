@@ -352,7 +352,8 @@ get.binding.characteristics <- function(data,srange=c(50,500),bin=5,cluster=NULL
   th <- (ccl.av$y[pi]-ccl.av$y[length(ccl.av$y)])/3+ccl.av$y[length(ccl.av$y)]
   whs <- max(ccl.av$x[ccl.av$y>=th]);
 
-  if (! is.integer(whs)) { # Anshul: added this to avoid situations where whs ends up being -Inf
+#  if (! is.integer(whs)) { # Anshul: added this to avoid situations where whs ends up being -Inf
+  if (!is.finite(whs)) { # fixed to avoid a TRUE with numeric values
     whs <- ccl.av$x[ min(c(2*pi,length(ccl.av$y))) ]
   }
 
