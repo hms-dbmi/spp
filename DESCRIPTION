@@ -4,8 +4,9 @@ Title: ChIP-seq processing pipeline
 Version: 1.14.1
 Date: 2016-06-02
 Author: Peter K
-Depends: caTools
+Depends: caTools, parallel, graphics, stats
 Imports: Rsamtools
+LinkingTo: Rcpp
 Maintainer: Peter Kharchenko <Peter_Kharchenko@hms.harvard.edu> 
 Description: R package for anlaysis of ChIP-seq and other functional sequencing data.
 License: GPL-2

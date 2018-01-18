@@ -10,6 +10,7 @@
 #include <functional>
 #include <utility>
 #include <boost/tokenizer.hpp>
+//#include <Rcpp.h>
 
 #ifdef HAVE_LIBBZ2
 #include <bzlib.h>
@@ -24,12 +25,14 @@ extern "C" {
 #include <stdio.h>   /* flockfile, getc_unlocked, funlockfile */
 #include <stdlib.h>  /* malloc, realloc */
 
+
 #include <errno.h>   /* errno */
 #include <unistd.h>  /* ssize_t */
 ssize_t getline_local(char **lineptr, size_t *n, FILE *stream);
 }
 
 using namespace std;
+//using namespace Rcpp;
 
 
 class lessAbsoluteValue {
@@ -69,6 +72,8 @@ int get_a_line(FILE *f,BZFILE *b,int bz2file,string& line) {
     } else {
       if(bzerror!=BZ_STREAM_END) {
 	cerr<<"encountered BZERROR="<<bzerror<<endl;
+	//Rcpp::Rcerr<<"encountered BZERROR="<<bzerror<<std::endl;
+
       }
       return(0);
     }
