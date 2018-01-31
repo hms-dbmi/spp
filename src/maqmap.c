@@ -42,7 +42,7 @@ maqmap_t *maqmap_read_header(gzFile fp)
 	if (mm->format != MAQMAP_FORMAT_NEW) {
 		if (mm->format > 0) {
 			REprintf("** Obsolete map format is detected. Please use 'mapass2maq' command to convert the format.\n");
-			return 3;
+			return 0;
 		}
 		assert(mm->format == MAQMAP_FORMAT_NEW);
 	}
