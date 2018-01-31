@@ -24,7 +24,7 @@ extern "C" {
    * lwcc - calculate local window cross-correlation
    */
 
-  SEXP lwcc(SEXP x_R, // positive strand hist 
+  SEXP spp_lwcc(SEXP x_R, // positive strand hist 
 	    SEXP y_R, // negative strand hist of the same length
 	    SEXP osize_R,       // outer boundary distance
 	    SEXP isize_R,        // inner boundary distance
@@ -340,7 +340,7 @@ extern "C" {
    * wtd - window tag difference implementation
    */
 
-  SEXP wtd(SEXP x_R, // positive strand hist 
+  SEXP spp_wtd(SEXP x_R, // positive strand hist 
 	   SEXP y_R, // negative strand hist of the same length
 	   SEXP wsize_R,       // outer boundary distance
 	   SEXP return_peaks_R, // whether all correlation values, or just peaks should be returned
