@@ -20,7 +20,6 @@ extern "C" {
 
 using namespace std;
 
-
 class lessAbsoluteValue {
 public:
   bool operator()(int a, int b) const {
@@ -64,7 +63,7 @@ extern "C" {
   m1 = &mm1;
 
   if (!f)  { 
-    cout<<"can't open input file \""<<fname<<"\"\n"; 
+    Rprintf("can't open input file \"",fname,"\"\n"); 
   }  else {
     Rprintf("opened %s\n",fname);
 
