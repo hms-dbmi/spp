@@ -5,12 +5,10 @@
 #include "const.h"
 #include "maqmap.h"
 
-extern "C" {
 //#include "R.h"
 //#include "Rmath.h"
 #include "Rinternals.h"
 #include "Rdefines.h"
-}
 
 
 
