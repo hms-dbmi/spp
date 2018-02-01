@@ -1,8 +1,8 @@
 Package: spp
 Type: Package
-Title: ChIP-seq processing pipeline
+Title: ChIP-seq Processing Pipeline
 Version: 1.15.1
-Date: 2016-06-02
+Date: 2018-02-01
 Author: Peter K
 Depends: R (>= 1.5.0), Rcpp
 Imports: Rsamtools, caTools, parallel, graphics, stats
