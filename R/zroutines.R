@@ -7,7 +7,7 @@
 
 # -------- ROUTINES FOR READING IN THE DATA FILES ------------
 # fix.chromosome.names : remove ".fa" suffix from match sequence names
-setClass("SPPGenerics")
+
 
 read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max.eland.tag.length=-1,extended=F,multi=F) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
@@ -869,7 +869,7 @@ tag.scc <- function(tags,srange=c(50,250),bin=1,tt=NULL,llim=10) {
 
 
 # plot tag cross-correlation
-t.plotcc <- structure(function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag", pch=19, grid.i=c(-5:5), grid.s=10, type='b', plot.grid=F, cols=c(1,2,4,"orange",8,"pink"), min.peak.x=NULL, xlim=NULL, plot.147=F, plot.max=T, rmw=1, rescale=F, legendx="right", ltys=rep(1,length(ac)), ...) {
+t.plotcc <- function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag", pch=19, grid.i=c(-5:5), grid.s=10, type='b', plot.grid=F, cols=c(1,2,4,"orange",8,"pink"), min.peak.x=NULL, xlim=NULL, plot.147=F, plot.max=T, rmw=1, rescale=F, legendx="right", ltys=rep(1,length(ac)), ...) {
     if(is.list(ac)) {
       cols <- cols[1:length(ac)];
 
@@ -928,10 +928,10 @@ t.plotcc <- structure(function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag"
       legend(x=legendx,bty="n",legend=c(paste("max at ",m,"bp",sep="")));
       return(m);
     }
-  },class="SPPGenerics")
+  }
   
   # plot chromosome-acerage cross-correlation 
-  t.plotavcc <- structure(function(ci, main=paste(ci,"chromosome average"), ccl, return.ac=F, ttl, plot=T, ... ) {
+  t.plotavcc <- function(ci, main=paste(ci,"chromosome average"), ccl, return.ac=F, ttl, plot=T, ... ) {
       cc <- ccl[[ci]];
       if(length(cc)==1)  { return(cc[[1]]) };
       if(length(cc)==0) { return(c()) };
@@ -948,16 +948,16 @@ t.plotcc <- structure(function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag"
         if(!return.ac) { return(m) }
       }
       if(return.ac) { return(ac) }
-    },class = "SPPGenerics")
+    }
 
-  t.plotchrcc <- structure(function(ci,ncol=4, ccl, ... ) {
+  t.plotchrcc <- function(ci,ncol=4, ccl, ... ) {
       cc <- ccl[[ci]];
       ac <- do.call(rbind,cc);
       par(mfrow = c(length(cc)/ncol,ncol), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.8)
       lapply(names(cc),function(ch) { t.plotcc(cc[[ch]],main=paste(ci,": chr",ch,sep=""), ...) })
-    },class="SPPGenerics")
+    }
 
-  t.plotavccl <- structure(function(ci, ccl, main=paste(ci,"chromosome average"), rtl, ... ) {
+  t.plotavccl <- function(ci, ccl, main=paste(ci,"chromosome average"), rtl, ... ) {
       #cc <- lapply(ccl[[ci]],function(x) { if(!is.null(x$M)) { x$M <- NULL;}; return(x); });
       cc <- ccl[[ci]];
       chrs <- names(cc[[1]]); names(chrs) <- chrs;
@@ -966,13 +966,13 @@ t.plotcc <- structure(function(ac, lab=c(10,5,7), ylab="correlation", xlab="lag"
       avw <- unlist(lapply(tags,length));    avw <- avw/sum(avw);
       acl <- lapply(acl,function(ac) apply(ac,2,function(x) sum(x*avw)))
       t.plotcc(acl, main=main, ...);
-    },class="SPPGenerics")
+    }
   
-  t.plotchrccl <- structure(function(ci,ccl,ncol=4, ... ) {
+  t.plotchrccl <- function(ci,ccl,ncol=4, ... ) {
       cc <- ccl[[ci]];
       par(mfrow = c(length(cc[[1]])/ncol,ncol), mar = c(3.5,3.5,2.0,0.5), mgp = c(2,0.65,0), cex = 0.8)
       lapply(names(cc[[1]]),function(ch) { t.plotcc(lapply(cc,function(x) x[[ch]]),main=paste(ci,": chr",ch,sep=""), ...) })
-    },class="SPPGenerics")
+    }
 
   
 
@@ -1505,7 +1505,7 @@ tag.lwcc <- function(ctv,s,e,return.peaks=T, bg.ctv=NULL, mask.ctv=NULL, ...) {
 
 # determine mirror-based binding positions using sliding window along each chromosome
 # extra parameters are passed on to call.nucleosomes()
-window.call.mirror.binding <- structure(function(tvl,window.size=4e7, debug=T, cluster=NULL, bg.tl=NULL, mask.tl=NULL, background.density.scaling=T, ...) {
+window.call.mirror.binding <- function(tvl,window.size=4e7, debug=T, cluster=NULL, bg.tl=NULL, mask.tl=NULL, background.density.scaling=T, ...) {
   chrl <- names(tvl);
   # determine bg.weight
   if(!is.null(bg.tl)) {
@@ -1537,9 +1537,9 @@ window.call.mirror.binding <- structure(function(tvl,window.size=4e7, debug=T, c
     names(bl) <- chrl;
     return(bl);
   }
-},class="SPPGenerics")
+}
 
-window.chr.call.mirror.binding <- structure(function(ctvl,window.size,debug=T, chr="NA", cluster=NULL, method=tag.wtd, bg.ctv=NULL, mask.ctv=NULL, ...) {
+window.chr.call.mirror.binding <- function(ctvl,window.size,debug=T, chr="NA", cluster=NULL, method=tag.wtd, bg.ctv=NULL, mask.ctv=NULL, ...) {
   ctv <- ctvl$ctv; bg.ctv <- ctvl$bg.ctv; mask.ctv <- ctvl$mask.ctv;
   if(is.null(ctv)) { return(data.frame(x=c(),y=c())) }
   if(length(ctv)<2) { return(data.frame(x=c(),y=c())) }
@@ -1566,7 +1566,7 @@ window.chr.call.mirror.binding <- structure(function(ctvl,window.size,debug=T, c
     cat(".");
   }
   return(data.frame(x=pinfo[,1],y=pinfo[,2]));
-},class="SPPGenerics")
+}
 
 generate.randomized.data <- function(data,shuffle.window=1,shuffle.both.strands=T,strand.shuffle.only=F,chrl=names(data)) {
   names(chrl) <- unlist(chrl);
@@ -1693,7 +1693,7 @@ determine.lwcc.threshold <- function(tvl,chrl=names(tvl),e.value=100, n.randomiz
 
 
 # determine membership of points in fragments
-points.within <- structure(function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F) {
+points.within <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F) {
   if(is.null(x) | length(x) < 1) { return(c()) };
   if(!sorted) {
     #ox <- rank(x,ties="first");
@@ -1718,7 +1718,7 @@ points.within <- structure(function(x,fs,fe,return.list=F,return.unique=F,sorted
     result <- result[ox];
   }
   return(result);  
-},class="SPPGenerics")
+}
 
 # determine cooridnates of points x relative to signed
 # positions pos within size range
@@ -2016,7 +2016,7 @@ calculate.enrichment.estimates <- function(binding.positions,signal.data=NULL,co
 
 
 # precalculate peak agreement of a sampling list given a reference
-t.precalculate.ref.peak.agreement <- structure(function(ref,sf,agreement.distance=50,enr.field="enr") {
+t.precalculate.ref.peak.agreement <- function(ref,sf,agreement.distance=50,enr.field="enr") {
   ref <- ref$npl;
   cn <- names(ref); names(cn) <- cn;
 
@@ -2034,11 +2034,11 @@ t.precalculate.ref.peak.agreement <- structure(function(ref,sf,agreement.distanc
       return(cbind(ov=as.integer(!is.na(pwi)),re=renr,oe=oenr));
     })))
   })
-},class="SPPGenerics")
+}
 
 
 # find minimal saturated enrichment given a list of replicate agreement matrices (for one fraction)
-t.find.min.saturated.enr <- structure(function(pal,thr=0.01,plot=F,return.number.of.peaks=F,plot.individual=T,return.median=F,return.vector=F) {
+t.find.min.saturated.enr <- function(pal,thr=0.01,plot=F,return.number.of.peaks=F,plot.individual=T,return.median=F,return.vector=F) {
   nr <- length(pal);
   # merge replicate data frames
   mpd <- data.frame(do.call(rbind,pal));
@@ -2109,7 +2109,7 @@ t.find.min.saturated.enr <- structure(function(pal,thr=0.01,plot=F,return.number
       return(menr);
     }
   }
-}, class = "SPPGenerics")
+}
 
 
 # determine d1/d2 dataset size ratio. If background.density.scaling=F, the ratio of tag counts is returned.
@@ -2225,7 +2225,7 @@ densum <- function(vin,bw=5,dw=3,match.wt.f=NULL,return.x=T,from=min(vin),to=max
 # vin - tag vector (postive values, pre-shifted)
 # window.size/window.step - window characteristics
 # tv - optional, pre-sorted, pre-trimmed tag vector
-window.tag.count <- structure(function(vin,window.size,window.step=1,return.x=T,from=min(vin)+floor(window.size/2),to=max(vin)-floor(window.size/2),tv=NULL) {
+window.tag.count <- function(vin,window.size,window.step=1,return.x=T,from=min(vin)+floor(window.size/2),to=max(vin)-floor(window.size/2),tv=NULL) {
   whs <- floor(window.size/2);
   # select tags with margins
   if(is.null(tv)) {
@@ -2249,10 +2249,10 @@ window.tag.count <- structure(function(vin,window.size,window.step=1,return.x=T,
   } else {
     return(dout)
   }
-},class="SPPGenerics")
+}
 
 # count tags in windows around specified positions (pos)
-window.tag.count.around <- structure(function(vin,window.size,pos,return.x=T,tc=NULL,sorted=F) {
+window.tag.count.around <- function(vin,window.size,pos,return.x=T,tc=NULL,sorted=F) {
   if(is.null(tc)) {
     tc <- table(vin);
   }
@@ -2281,7 +2281,7 @@ window.tag.count.around <- structure(function(vin,window.size,pos,return.x=T,tc=
       return(twc[op]);
     }
   }
-},class="SPPGenerics")
+}
 
 # given a tag vector (signed), identify and clean up (either remove or cap) singular positions that exceed local tag density
 # vin - tag vector
