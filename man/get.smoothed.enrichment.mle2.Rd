@@ -1,14 +1,21 @@
 \name{get.smoothed.enrichment.mle2}
 \alias{get.smoothed.enrichment.mle2}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{ Calculate background input controlled chromosome-wide profiles of smoothed enrichment estimate }
+\title{ Calculate background input controlled chromosome-wide
+       profiles of smoothed enrichment estimate }
 \description{
   Given signal and control tag positions, the method calculates log2
   signal to control enrichment esimates (maximum likelihood) for each
-  chromosome, based on the smoothed tag density profile (see \link{get.smoothed.tag.density}).
+  chromosome, based on the smoothed tag density profile
+  (see \link{get.smoothed.tag.density}).
 }
 \usage{
-get.smoothed.enrichment.mle2(signal.tags1, control.tags1, signal.tags2, control.tags2, tag.shift = 146/2, background.density.scaling = F, pseudocount = 1, bg.weight1 = NULL, bg.weight2 = NULL, rngl = NULL, chrl = NULL, ...)
+get.smoothed.enrichment.mle2(signal.tags1, control.tags1,
+                             signal.tags2, control.tags2,
+                             tag.shift = 146/2, background.density.scaling = F,
+                             pseudocount = 1, bg.weight1 = NULL,
+                             bg.weight2 = NULL,
+                             rngl = NULL, chrl = NULL, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

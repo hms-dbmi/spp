@@ -1,12 +1,22 @@
 \name{get.conservative.fold.enrichment.profile2}
 \alias{get.conservative.fold.enrichment.profile2}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{ Return Conservative fold enrichment profile controlling for input and a single background scale  }
+\title{ Return Conservative fold enrichment profile controlling for input
+       and a single background scale  }
 \description{
-Returns a conservative upper/lower bound profile (log2) given signal tag list, background tag list and window scales controlling for input, and supporting only a single background scale.
+Returns a conservative upper/lower bound profile (log2) given signal tag list,
+  background tag list and window scales controlling for input,
+  and supporting only a single background scale.
+  
+  Novel version of get.conservative.fold.enrichment.profile()
+  supporting a single background scale.
 }
 \usage{
-get.conservative.fold.enrichment.profile2(ftl1, ftl2, btl1, btl2, fws, bws = 1 * fws, step = 50, tag.shift = 146/2, alpha = 0.05, background.density.scaling = T, bg.weight1 = NULL, bg.weight2 = NULL, posl = NULL, return.mle = F)
+get.conservative.fold.enrichment.profile2(ftl1, ftl2, btl1, btl2, fws,
+           bws = 1 * fws, step = 50, tag.shift = 146/2, 
+           alpha = 0.05, background.density.scaling = T,
+           bg.weight1 = NULL, bg.weight2 = NULL, 
+           posl = NULL, return.mle = F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -82,10 +92,12 @@ function (ftl1, ftl2, btl1, btl2, fws, bws = 1 * fws, step = 50,
         chrl <- chrl[chrl \%in\% names(posl)]
     }
     if (is.null(bg.weight1)) {
-        bg.weight1 <- dataset.density.ratio(ftl1, btl1, background.density.scaling = background.density.scaling)
+        bg.weight1 <- dataset.density.ratio(ftl1, btl1,
+                      background.density.scaling = background.density.scaling)
     }
     if (is.null(bg.weight2)) {
-        bg.weight2 <- dataset.density.ratio(ftl2, btl2, background.density.scaling = background.density.scaling)
+        bg.weight2 <- dataset.density.ratio(ftl2, btl2,
+                      background.density.scaling = background.density.scaling)
     }
     lapply(chrl, function(chr) {
         x <- binomial.proportion.ratio.bounds(abs(ftl1[[chr]] + 

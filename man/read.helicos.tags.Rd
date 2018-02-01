@@ -6,7 +6,8 @@
 Read in Helicos tags
 }
 \usage{
-read.helicos.tags(filename, read.tag.names = F, fix.chromosome.names = F, include.length.info = T)
+read.helicos.tags(filename, read.tag.names = F,
+                  fix.chromosome.names = F, include.length.info = T)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
