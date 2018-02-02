@@ -4,7 +4,7 @@ Title: ChIP-seq Processing Pipeline
 Version: 1.15.1
 Date: 2018-02-01
 Author: Peter K
-Depends: R (>= 1.5.0), Rcpp
+Depends: R (>= 3.3.0), Rcpp
 Imports: Rsamtools, caTools, parallel, graphics, stats
 Suggests: methods
 LinkingTo: Rcpp
