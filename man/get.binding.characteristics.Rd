@@ -45,8 +45,8 @@ get.binding.characteristics(data, srange = c(50, 500), bin = 5,
   \item{quality.bin.acceptance}{ A list structure, describing the effect of inclusion of different tag quality bins on
     cross-correlation, and a resolution on which bins should be considered.}
     \itemize{
-      \item{informative.bins}{ A boolean vector indicating whether the inclusion of tags from the tag quality bin specified in the name
-        attribute significantly increases cross-correlation profile near the peak.}
-      \item{quality.cc}{ A list giving the cross-correlation profile after the inclusion of the tags from different quality bins}
+      \item{informative.bins:}{ A boolean vector indicating whether the inclusion of tags from the tag quality bin specified in the name
+        attribute signiificantly increases cross-correlation profile near the peak.}
+      \item{quality.cc:}{ A list giving the cross-correlation profile after the inclusion of the tags from different quality bins}
       }
   }
