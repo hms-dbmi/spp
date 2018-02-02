@@ -25,7 +25,8 @@ find.binding.positions(signal.data,  f=1,e.value = NULL, fdr = NULL, masked.data
   ~~ tag data ~~
   \item{signal.data}{ signal tag vector list }
   \item{control.data}{ optional control (input) tag vector list }
-  \item{f}{f}
+  \item{f}{Fraction of signal read subsampled. Default=1, i.e. 
+   no subsampling}
   ~~ position stringency criteria ~~
   \item{e.value}{ E-value defining the desired statistical significance
     of binding positions.  }
@@ -58,7 +59,7 @@ find.binding.positions(signal.data,  f=1,e.value = NULL, fdr = NULL, masked.data
   \item{n.control.samples}{n.control.samples}
   \item{enrichment.scale.down.control}{enrichment.scale.down.control}
   \item{\dots}{ additional parameters should be the same as those passed
-  to the \code{\link{find.binding.positions}}}
+  to the \code{lwcc.prediction}}
 
   ~~ randomized controls ~~
   \item{n.randomizations}{ number of tag randomziations that should be
