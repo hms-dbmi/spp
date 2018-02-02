@@ -59,7 +59,7 @@ find.binding.positions(signal.data,  f=1,e.value = NULL, fdr = NULL, masked.data
   \item{n.control.samples}{n.control.samples}
   \item{enrichment.scale.down.control}{enrichment.scale.down.control}
   \item{\dots}{ additional parameters should be the same as those passed
-  to the \code{\link{find.binding.positions}}}
+  to the \code{lwcc.prediction}}
 
   ~~ randomized controls ~~
   \item{n.randomizations}{ number of tag randomziations that should be
