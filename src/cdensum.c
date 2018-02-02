@@ -4,7 +4,7 @@
 #include "Rinternals.h"
 
 
-#undef DEBUG 1
+#undef DEBUG
 
 // dout is npos-length output array.
 // n - number of positions in pos (and length of tc count array)
