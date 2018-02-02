@@ -32,7 +32,7 @@ get.broad.enrichment.clusters(signal.data,
     density). If FALSE, the dataset ratio will be equal to the ratio of
     the number of tags in each dataset.}
       \item{\dots}{ additional parameters should be the same as those passed
-  to the \code{\link{find.binding.positions}}}
+  to the \code{find.significantly.enriched.regions}}
 }
 \value{
   A list of elements corresponding to chromosomes, with each element
