@@ -572,7 +572,7 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
 }
 
 # get smoothed maximum likelihood estimate of the log2 signal to control enrichment ratio
-get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight=NULL, rngl=NULL, chrl=NULL, bandwidth = 150, step = 50, ... ) {
+get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight=NULL, rngl=NULL, chrl=NULL, ... ) {
   # determine common range
   if(is.null(chrl)) {
     chrl <- intersect(names(signal.tags),names(control.tags)); names(chrl) <- chrl;
