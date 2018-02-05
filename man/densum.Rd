@@ -8,7 +8,8 @@ Do Something
 Densum
 }
 \usage{
-densum(vin, bw = 5, dw = 3, match.wt.f = NULL, return.x = T, from = min(vin), to = max(vin), step = 1, new.code = T)
+densum(vin, bw = 5, dw = 3, match.wt.f = NULL, return.x = T,
+       from = min(vin), to = max(vin), step = 1, new.code = T)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -45,9 +46,6 @@ Some sum
 }
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
 \examples{
 \dontrun{
 ##---- Should be DIRECTLY executable !! ----
@@ -74,7 +72,8 @@ function (vin, bw = 5, dw = 3, match.wt.f = NULL, return.x = T,
     if (range(pos)[1] < 0) {
         stop("position vector contains negative values")
     }
-    storage.mode(n) <- storage.mode(rng) <- storage.mode(bw) <- storage.mode(dw) <- storage.mode(step) <- "integer"
+    storage.mode(n) <- storage.mode(rng) <- storage.mode(bw)
+          <- storage.mode(dw) <- storage.mode(step) <- "integer"
     spos <- rng[1]
     storage.mode(spos) <- "double"
     dlength <- floor((rng[2] - rng[1])/step) + 1
@@ -82,7 +81,8 @@ function (vin, bw = 5, dw = 3, match.wt.f = NULL, return.x = T,
         stop("zero data range")
     }
     if (new.code) {
-        storage.mode(step) <- storage.mode(dlength) <- storage.mode(bw) <- storage.mode(dw) <- "integer"
+        storage.mode(step) <- storage.mode(dlength)
+              <- storage.mode(bw) <- storage.mode(dw) <- "integer"
         dout <- .Call("ccdensum", pos, tc, spos, bw, dw, dlength, 
             step)
     }
