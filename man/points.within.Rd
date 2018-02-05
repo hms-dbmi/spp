@@ -8,7 +8,8 @@
  Do something with Points.within
 }
 \usage{
-points.within(x, fs, fe, return.list = F, return.unique = F, sorted = F, return.point.counts = F, ...)
+points.within(x, fs, fe, return.list = F, return.unique = F,
+              sorted = F, return.point.counts = F, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
