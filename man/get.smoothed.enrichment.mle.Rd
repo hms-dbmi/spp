@@ -17,8 +17,6 @@ get.smoothed.enrichment.mle(signal.tags,
   bg.weight = NULL, 
   rngl = NULL, 
   chrl = NULL, 
-  bandwidth = 150,
-  step = 50,
   ...)
 
 }
@@ -27,26 +25,22 @@ get.smoothed.enrichment.mle(signal.tags,
   \item{signal.tags}{ signal chromosome tag coordinate vectors (e.g. output
     of \code{\link{select.informative.tags}} }
   \item{control.tags}{ control (input) tags }
-    \item{tag.shift}{ number of base pairs by which positive and negative
+  \item{tag.shift}{ number of base pairs by which positive and negative
     tag coordinates should be shifted towards eachother (half of binding
-  peak separation distance)}
-
+    peak separation distance)}
+  \item{background.density.scaling}{background.density.scaling}
   \item{pseudocount}{ pseudocount value to be added to tag density -
     defaults to 1 }
-\item{bg.weight}{ optional weight by which the background density
+  \item{bg.weight}{ optional weight by which the background density
     should be multipled for scaling. If not supplied, the weight is
     calculated based on the ratio of the reduced ChIP to input dataset sizes. }
-  \item{step}{ The distance between the regularly spaced points for
-    which the values should be calculated. }
-  other parameters (such as bandwidth, step.size and tag.shift) are
-  passed to \link{get.smoothed.tag.density} - see appropriate reference
-  for details.
-  \item{background.density.scaling}{background.density.scaling}
   \item{rngl}{rngl}
   \item{chrl}{chrl}
-  \item{bandwidth}{bandwidth}
-    \item{\dots}{ additional parameters should be the same as those passed
-  to the \code{\link{find.binding.positions}}}
+  \item{\dots}{ additional parameters should be the same as those passed
+      to the \code{\link{get.smoothed.tag.density}}, such as for example
+      bandwidth (default value 150) and step (default value 50).
+      see appropriate reference for
+      \code{\link{get.smoothed.tag.density}} for details.}
 }
 \value{
   A list of elements corresponding to chromosomes, with each element

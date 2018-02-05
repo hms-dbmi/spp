@@ -25,7 +25,8 @@ find.binding.positions(signal.data,  f=1,e.value = NULL, fdr = NULL, masked.data
   ~~ tag data ~~
   \item{signal.data}{ signal tag vector list }
   \item{control.data}{ optional control (input) tag vector list }
-  \item{f}{f}
+  \item{f}{Fraction of signal read subsampled. Default=1, i.e. 
+   no subsampling}
   ~~ position stringency criteria ~~
   \item{e.value}{ E-value defining the desired statistical significance
     of binding positions.  }
@@ -54,11 +55,11 @@ find.binding.positions(signal.data,  f=1,e.value = NULL, fdr = NULL, masked.data
     density). If FALSE, the dataset ratio will be equal to the ratio of
     the number of tags in each dataset.}
 
-  \item{tec}{tec}
-  \item{n.control.samples}{n.control.samples}
-  \item{enrichment.scale.down.control}{enrichment.scale.down.control}
+  \item{tec}{ tec}
+  \item{n.control.samples}{ n.control.samples}
+  \item{enrichment.scale.down.control}{ enrichment.scale.down.control}
   \item{\dots}{ additional parameters should be the same as those passed
-  to the \code{\link{find.binding.positions}}}
+  to the \code{lwcc.prediction}}
 
   ~~ randomized controls ~~
   \item{n.randomizations}{ number of tag randomziations that should be
@@ -108,20 +109,20 @@ find.binding.positions(signal.data,  f=1,e.value = NULL, fdr = NULL, masked.data
 \value{
   \itemize{
 
-    \item{npl}{A per-chromosome list containing data frames describing
+    \item{npl}{ A per-chromosome list containing data frames describing
       determined binding positions. Column description}
         
         \itemize{
-            \item{x}{position}
-            \item{y}{score}
-            \item{evalue}{E-value}
-            \item{fdr}{FDR. For peaks higher than the maximum control peak,the highest dataset FDR is reported}
-            \item{enr}{lower bound of the fold-enrichment ratio confidence interval. This is the estimate determined using scale of
+            \item{x:}{ position}
+            \item{y:}{ score}
+            \item{evalue:}{ E-value}
+            \item{fdr:}{ FDR. For peaks higher than the maximum control peak,the highest dataset FDR is reported}
+            \item{enr:}{ lower bound of the fold-enrichment ratio confidence interval. This is the estimate determined using scale of
               1. Estimates corresponding to higher scales are returned in other enr columns with scale appearing in the name.}
-            \item{enr.mle}{enrichment ratio maximum likely estimate}
+            \item{enr.mle:}{ enrichment ratio maximum likely estimate}
         }
         
-    \item{thr}{info on the chosen statistical threshold of the peak scores}
+    \item{thr:}{ info on the chosen statistical threshold of the peak scores}
   
   }
 }

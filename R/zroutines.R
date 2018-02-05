@@ -572,7 +572,7 @@ get.smoothed.tag.density <- function(signal.tags,control.tags=NULL,bandwidth=150
 }
 
 # get smoothed maximum likelihood estimate of the log2 signal to control enrichment ratio
-get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight=NULL, rngl=NULL, chrl=NULL, bandwidth = 150, step = 50, ... ) {
+get.smoothed.enrichment.mle <- function(signal.tags, control.tags, tag.shift=146/2, background.density.scaling=F, pseudocount=1,bg.weight=NULL, rngl=NULL, chrl=NULL, ... ) {
   # determine common range
   if(is.null(chrl)) {
     chrl <- intersect(names(signal.tags),names(control.tags)); names(chrl) <- chrl;
@@ -1693,7 +1693,7 @@ determine.lwcc.threshold <- function(tvl,chrl=names(tvl),e.value=100, n.randomiz
 
 
 # determine membership of points in fragments
-points.within <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F) {
+points.within <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F, ...) {
   if(is.null(x) | length(x) < 1) { return(c()) };
   if(!sorted) {
     #ox <- rank(x,ties="first");
