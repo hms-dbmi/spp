@@ -7,10 +7,10 @@
   get.broad.enrichment.clusters method in a broadPeak format.
 }
 \usage{
-write.broadpeak.info(broadpeak.results, filename)
+write.broadpeak.info(bp, fname)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{broadpeak.results}{ output of the \code{\link{get.broad.enrichment.clusters}} }
-  \item{filename}{ file name }
+  \item{bp}{broadpeak.results, output of the \code{\link{get.broad.enrichment.clusters}} }
+  \item{fname}{ file name }
 }

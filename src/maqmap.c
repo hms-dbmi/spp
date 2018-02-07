@@ -5,6 +5,13 @@
 #include "const.h"
 #include "maqmap.h"
 
+//#include "R.h"
+//#include "Rmath.h"
+#include "Rinternals.h"
+#include "Rdefines.h"
+
+
+
 maqmap_t *maq_new_maqmap()
 {
 	maqmap_t *mm = (maqmap_t*)calloc(1, sizeof(maqmap_t));
@@ -41,8 +48,8 @@ maqmap_t *maqmap_read_header(gzFile fp)
 	gzread(fp, &mm->format, sizeof(int));
 	if (mm->format != MAQMAP_FORMAT_NEW) {
 		if (mm->format > 0) {
-			fprintf(stderr, "** Obsolete map format is detected. Please use 'mapass2maq' command to convert the format.\n");
-			exit(3);
+			REprintf("** Obsolete map format is detected. Please use 'mapass2maq' command to convert the format.\n");
+			return 0;
 		}
 		assert(mm->format == MAQMAP_FORMAT_NEW);
 	}
@@ -69,31 +76,31 @@ static void mapvalidate_core(gzFile fpin)
 	bit64_t *cnt;
 	m1 = &mm1;
 	cnt = (bit64_t*)calloc(m->n_ref, 8);
-	printf("[message] number of reference sequences: %d\n", m->n_ref);
+	Rprintf("[message] number of reference sequences: %d\n", m->n_ref);
 	while ((l = maqmap_read1(fpin, m1)) != 0) {
 		if (l != sizeof(maqmap1_t)) {
-			printf("[fatal error] truncated map file.\n");
+			REprintf("[fatal error] truncated map file.\n");
 			break;
 		}
 		++n;
 		if ((int)m1->seqid >= m->n_ref) {
-			printf("[fatal error] maqmap1_t::seqid is invalid (%d >= %d).\n", m1->seqid, m->n_ref);
+			REprintf("[fatal error] maqmap1_t::seqid is invalid (%d >= %d).\n", m1->seqid, m->n_ref);
 			break;
 		}
 		++cnt[m1->seqid];
 		if (m1->size >= MAX_READLEN - 1) {
-			printf("[faltal error] maqmap1_t::size is invalid (%d >= %d).\n", m1->size, MAX_READLEN - 1);
+			REprintf("[faltal error] maqmap1_t::size is invalid (%d >= %d).\n", m1->size, MAX_READLEN - 1);
 			break;
 		}
 	}
 	if (m->n_mapped_reads != 0) {
 		if (m->n_mapped_reads != n) {
-			printf("[warning] maqmap1_t::n_mapped_reads is set, but not equals the real number (%llu != %llu).\n",
+			Rprintf("[warning] maqmap1_t::n_mapped_reads is set, but not equals the real number (%llu != %llu).\n",
 					m->n_mapped_reads, n);
 		}
 	}
 	for (i = 0; i != m->n_ref; ++i)
-		printf("[message] %s : %llu\n", m->ref_name[i], cnt[i]);
+		Rprintf("[message] %s : %llu\n", m->ref_name[i], cnt[i]);
 	free(cnt);
 	maq_delete_maqmap(m);
 }
@@ -141,7 +148,7 @@ int ma_mapview(int argc, char *argv[])
 		}
 	}
 	if (argc == optind) {
-		fprintf(stderr, "Usage: maq mapview [-bN] <in.map>\n");
+		REprintf("Usage: maq mapview [-bN] <in.map>\n");
 		return 1;
 	}
 	gzFile fp = (strcmp(argv[optind], "-") == 0)? gzdopen(STDIN_FILENO, "r") : gzopen(argv[optind], "r");
@@ -154,7 +161,7 @@ int ma_mapvalidate(int argc, char *argv[])
 {
 	gzFile fp;
 	if (argc < 2) {
-		fprintf(stderr, "Usage: maq mapvalidate <in.map>\n");
+		REprintf("Usage: maq mapvalidate <in.map>\n");
 		return 1;
 	}
 	fp = (strcmp(argv[optind], "-") == 0)? gzdopen(STDIN_FILENO, "r") : gzopen(argv[1], "r");

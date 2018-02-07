@@ -10,14 +10,23 @@
   regions exhibiting strong signals within the control data.
 }
 \usage{
-find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NULL, control.data = NULL, min.dist = 200, window.size = 4e+07, cluster = NULL, debug = T, n.randomizations = 3, shuffle.window = 1, min.thr = 0, topN = NULL, tag.count.whs = 100, enrichment.z = 2, method = tag.wtd, tec.filter = T, tec.window.size = 10000, tec.masking.window.size=tec.window.size, tec.z = 5, tec.poisson.z=5,tec.poisson.ratio=5, n.control.samples = 1, enrichment.background.scales = c(1, 5, 10), background.density.scaling = F, use.randomized.controls = F, ...)
+find.binding.positions(signal.data,  f=1,e.value = NULL, fdr = NULL, masked.data = NULL, 
+  control.data = NULL, whs = 200, min.dist = 200, window.size = 4e+07, cluster = NULL, 
+  debug = T, n.randomizations = 3, shuffle.window = 1, min.thr = 2, topN = NULL, 
+  tag.count.whs = 100, enrichment.z = 2, method = tag.wtd, tec.filter = T, 
+  tec.window.size = 10000, tec.z = 5, tec.masking.window.size=tec.window.size, 
+  tec.poisson.z=5,tec.poisson.ratio=5, tec = NULL, n.control.samples = 1,
+  enrichment.scale.down.control =F, enrichment.background.scales = c(1, 5, 10), 
+  use.randomized.controls = F, background.density.scaling = T, 
+  mle.filter = F,min.mle.threshold = 1, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   ~~ tag data ~~
   \item{signal.data}{ signal tag vector list }
   \item{control.data}{ optional control (input) tag vector list }
-
+  \item{f}{Fraction of signal read subsampled. Default=1, i.e. 
+   no subsampling}
   ~~ position stringency criteria ~~
   \item{e.value}{ E-value defining the desired statistical significance
     of binding positions.  }
@@ -38,12 +47,19 @@ find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NU
     during calculations to reduce memory usage. }
   \item{cluster}{ optional \code{snow} cluster to parallelize the
     processing on }
+  \item{debug}{ debug mode, whether to print debug messages }
   \item{min.thr}{ minimal score requirement for a peak }
   \item{background.density.scaling}{ If TRUE, regions of significant tag
     enrichment will be masked out when calculating size ratio of the
     signal to control datasets (to estimate ratio of the background tag
     density). If FALSE, the dataset ratio will be equal to the ratio of
     the number of tags in each dataset.}
+
+  \item{tec}{ tec}
+  \item{n.control.samples}{ n.control.samples}
+  \item{enrichment.scale.down.control}{ enrichment.scale.down.control}
+  \item{\dots}{ additional parameters should be the same as those passed
+  to the \code{lwcc.prediction}}
 
   ~~ randomized controls ~~
   \item{n.randomizations}{ number of tag randomziations that should be
@@ -54,7 +70,7 @@ find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NU
     into groups of \code{shuffle.window} and will be maintained
     together throughout the randomization. }
 
-  ~~ fold-enrichment confidence intervals
+  ~~ fold-enrichment confidence intervals ~~
   \item{tag.count.whs}{ half-size of a window used to assess fold
     enrichment of a binding position}
   \item{enrichment.z}{ Z-score used to define the significance level of
@@ -89,40 +105,50 @@ find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NU
     tec.poisson.ratio above the expected uniform input background. }
   \item{tec.poisson.ratio}{ Fold ratio by which input must exceed the
     level expected from the uniform distribution. }
-
-
-  
-  
 }
 \value{
-  \item{npl}{A per-chromosome list containing data frames describing
-    determined binding positions. Column description:
-    \item{x}{ position }
-    \item{y}{ score }
-    \item{evalue}{ E-value }
-    \item{fdr}{ FDR. For peaks higher than the maximum control peak,
-      the highest dataset FDR is reported }
-    \item{enr}{ lower bound of the fold-enrichment ratio confidence
-      interval. This is the estimate determined using scale of
-      1. Estimates corresponding to higher scales are returned in other enr columns
-      with scale appearing in the name.}
-    \item{enr.mle}{ enrichment ratio maximum likely estimate }
+  \itemize{
+
+    \item{npl}{ A per-chromosome list containing data frames describing
+      determined binding positions. Column description}
+        
+        \itemize{
+            \item{x:}{ position}
+            \item{y:}{ score}
+            \item{evalue:}{ E-value}
+            \item{fdr:}{ FDR. For peaks higher than the maximum control peak,the highest dataset FDR is reported}
+            \item{enr:}{ lower bound of the fold-enrichment ratio confidence interval. This is the estimate determined using scale of
+              1. Estimates corresponding to higher scales are returned in other enr columns with scale appearing in the name.}
+            \item{enr.mle:}{ enrichment ratio maximum likely estimate}
+        }
+        
+    \item{thr:}{ info on the chosen statistical threshold of the peak scores}
+  
   }
-  \item{thr}{ info on the chosen statistical threshold of the peak scores}
 }
 
 \examples{
-  # find binding positions using WTD method, 200bp half-window size,
-control data, 1% FDR
-  bp <-
-find.binding.positions(signal.data=chip.data,control.data=input.data,fdr=0.01,method=tag.wtd,whs=200);
+  \dontrun{
+  # find binding positions using WTD method, 200bp half-window size, 
+  # control data, 1% FDR
+  bp <-find.binding.positions(signal.data=chip.data,
+      control.data=input.data,
+      fdr=0.01,
+      method=tag.wtd,
+      whs=200);
 
   # find binding positions using MTC method, using 5 tag randomizations,
   #  keeping pairs of tag positions together (shuffle.window=2)
-  bp <- find.binding.positions(signal.data=chip.data,control.data=input.data,fdr=0.01,method=tag.lwcc,whs=200,use.randomized.controls=T,n.randomizations=5,shuffle.window=2)
+  bp <- find.binding.positions(signal.data=chip.data,
+    control.data=input.data,
+    fdr=0.01,method=tag.lwcc,
+      whs=200,
+      use.randomized.controls=T,
+      n.randomizations=5,
+      shuffle.window=2)
 
   # print out the number of determined positions  
   print(paste("detected",sum(unlist(lapply(bp$npl,function(d) length(d$x)))),"peaks"));
   
-
+  }
 }

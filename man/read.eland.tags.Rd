@@ -7,7 +7,12 @@
   number of mismatches associated with each mapped tag.
 }
 \usage{
-read.eland.tags(filename, read.tag.names = F, fix.chromosome.names = T, max.eland.tag.length = -1,extended=F)
+read.eland.tags(filename, 
+  read.tag.names = F, 
+  fix.chromosome.names = T, 
+  max.eland.tag.length = -1,
+  extended=F, 
+  multi = F)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

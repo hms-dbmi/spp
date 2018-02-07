@@ -9,7 +9,17 @@
   of sequencing required to reach desired \code{target.fold.enrichment}.
 }
 \usage{
-get.mser.interpolation(signal.data, control.data, target.fold.enrichment = 5, n.chains = 10, n.steps = 6, step.size = 1e+05, chains = NULL, test.agreement = 0.99, return.chains = F, enrichment.background.scales = c(1), excluded.steps = c(seq(2, n.steps - 2)), ...)
+get.mser.interpolation(signal.data, 
+  control.data, 
+  target.fold.enrichment = 5, 
+  n.chains = 10, 
+  n.steps = 6, 
+  step.size = 1e+05, 
+  chains = NULL, 
+  test.agreement = 0.99, 
+  return.chains = F, 
+  enrichment.background.scales = c(1), 
+  excluded.steps = c(seq(2, n.steps - 2)), ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
