@@ -26,16 +26,22 @@ if test "${has_R_shlib}" = no; then
   AC_MSG_ERROR([R was configured without --enable-R-shlib or --enable-R-static-lib])
 fi
 
-CC=`${R_HOME}/bin/R CMD config CC`;
-CXX=`${R_HOME}/bin/R CMD config CXX`;
+CC=`"${R_HOME}/bin/R" CMD config CC`;
+
+CXX11=`"${R_HOME}/bin/R" CMD config CXX11`
+CXX11STD=`"${R_HOME}/bin/R" CMD config CXX11STD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXX11FLAGS`
+AC_LANG(C++)
+
 CPPFLAGS="${CPPFLAGS} ${PKG_CPPFLAGS}"
-CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
-CXXFLAGS=`${R_HOME}/bin/R CMD config CXXFLAGS`
+CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 RINC=`${R_HOME}/bin/R CMD config --cppflags`
 RCPP_CPP=`${R_HOME}/bin/Rscript -e "Rcpp:::CxxFlags()"`
 CPPFLAGS="${CPPFLAGS} ${RCPP_CXX}"
 RCPP_LIBS=`${R_HOME}/bin/Rscript -e "Rcpp:::LdFlags()"`
 LIBS="${LIBS} ${PKG_LIBS} ${RCPP_LIBS}" 
+
 AC_SUBST(R_HOME)
 AC_SUBST(RINC)
 AC_SUBST(RLD)
