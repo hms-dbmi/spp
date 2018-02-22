@@ -13,4 +13,3 @@ Description: R package for analysis of ChIP-seq and other functional sequencing 
 License: GPL-2
 LazyLoad: yes
 Note: revised for compliance with CRAN by K.Pal and C.M.Livi
-SystemRequirements: C++11
