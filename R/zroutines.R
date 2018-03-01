@@ -2604,16 +2604,16 @@ get.clusters2 <- function(x,CL)  {
 }
 
 
-##new points_within for deprecated points.within
-points_withinFunction <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F, ...) {
-  .Deprecated("points.within",package="spp") #include a package argument, too
-  points.within(x=x,fs=fs,fe=fe,return.list=return.list,return.unique=return.unique,sorted=sorted,return.point.counts=return.point.counts, ...)
+##Deprecated function of points.within
+points.within <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F, ...) {
+  .Deprecated("points_withinFunction",package="spp") #include a package argument, too
+  points_withinFunction(x=x,fs=fs,fe=fe,return.list=return.list,return.unique=return.unique,sorted=sorted,return.point.counts=return.point.counts, ...)
 }
 
 
-##Deprecated function of points.within
+##new points_within for deprecated points.within
 # determine membership of points in fragments
-points.within <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F, ...) {
+points_withinFunction <- function(x,fs,fe,return.list=F,return.unique=F,sorted=F,return.point.counts=F, ...) {
   if(is.null(x) | length(x) < 1) { return(c()) };
   if(!sorted) {
     #ox <- rank(x,ties="first");
