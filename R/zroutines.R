@@ -12,18 +12,54 @@
 read.eland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T,max.eland.tag.length=-1,extended=F,multi=F) {
   if(read.tag.names) { rtn <- as.integer(1); } else { rtn <- as.integer(0); };
   storage.mode(max.eland.tag.length) <- "integer";
-  callfunction <- "read_eland";
-  if(extended) { callfunction <- "read_eland_extended"; };
-  if(multi) { callfunction <- "read_eland_multi"; };
-  tl <- lapply(.Call(callfunction,path.expand(filename),rtn,max.eland.tag.length),function(d) {
-    xo <- order(abs(d$t));
-    d$t <- d$t[xo];
-    d$n <- d$n[xo];
-    if(read.tag.names) {
-      d$s <- d$s[xo];
-    }
-    return(d);
-  });
+  
+  # callfunction <- "read_eland";
+  # if(extended) { callfunction <- "read_eland_extended"; };
+  # if(multi) { callfunction <- "read_eland_multi"; };
+  # tl <- lapply(.Call(callfunction,path.expand(filename),rtn,max.eland.tag.length),function(d) {
+  #   xo <- order(abs(d$t));
+  #   d$t <- d$t[xo];
+  #   d$n <- d$n[xo];
+  #   if(read.tag.names) {
+  #     d$s <- d$s[xo];
+  #   }
+  #   return(d);
+  # });
+  ##substitute of the commented code-junk above, to address a warning during compilation
+  if (multi) 
+  {
+    tl <- lapply(.Call("read_eland_multi",path.expand(filename),rtn,max.eland.tag.length),function(d) {
+      xo <- order(abs(d$t));
+      d$t <- d$t[xo];
+      d$n <- d$n[xo];
+      if(read.tag.names) {
+        d$s <- d$s[xo];
+      }
+      return(d);
+    });
+  }else if (extended) {
+    tl <- lapply(.Call("read_eland_extended",path.expand(filename),rtn,max.eland.tag.length),function(d) {
+      xo <- order(abs(d$t));
+      d$t <- d$t[xo];
+      d$n <- d$n[xo];
+      if(read.tag.names) {
+        d$s <- d$s[xo];
+      }
+      return(d);
+    });
+  }else{
+    tl <- lapply(.Call("read_eland",path.expand(filename),rtn,max.eland.tag.length),function(d) {
+      xo <- order(abs(d$t));
+      d$t <- d$t[xo];
+      d$n <- d$n[xo];
+      if(read.tag.names) {
+        d$s <- d$s[xo];
+      }
+      return(d);
+    });
+  };
+
+
   if(fix.chromosome.names) {
     # remove ".fa"
     names(tl) <- gsub("\\.fa","",names(tl))

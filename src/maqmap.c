@@ -107,55 +107,55 @@ static void mapvalidate_core(gzFile fpin)
 
 /* mapview */
 
-static void mapview_core(FILE *fpout, gzFile fpin, int is_verbose, int is_mm)
-{
-	bit32_t j;
-	maqmap_t *m = maqmap_read_header(fpin);
-	maqmap1_t *m1, mm1;
-	m1 = &mm1;
-	while (maqmap_read1(fpin, m1)) {
-		fprintf(fpout, "%s\t%s\t%d\t%c\t%d\t%u\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d",
-				m1->name, m->ref_name[m1->seqid], (m1->pos>>1) + 1,
-				(m1->pos&1)? '-' : '+', m1->dist, m1->flag, m1->map_qual, (signed char)m1->seq[MAX_READLEN-1],
-				m1->alt_qual, m1->info1&0xf, m1->info2, m1->c[0], m1->c[1], m1->size);
-		if (is_verbose) {
-			fputc('\t', fpout);
-			for (j = 0; j != m1->size; ++j) {
-				if (m1->seq[j] == 0) fputc('n', fpout);
-				else if ((m1->seq[j]&0x3f) < 27) fputc("acgt"[m1->seq[j]>>6&3], fpout);
-				else fputc("ACGT"[m1->seq[j]>>6&3], fpout);
-			}
-			fputc('\t', fpout);
-			for (j = 0; j != m1->size; ++j)
-				fputc((m1->seq[j]&0x3f) + 33, fpout);
-		}
-		if (is_mm) {
-			bit64_t *p = (bit64_t*)(m1->seq + 55);
-			fprintf(fpout, "\t%llx", *p);
-		}
-		fputc('\n', fpout);
-	}
-	maq_delete_maqmap(m);
-}
+//static void mapview_core(FILE *fpout, gzFile fpin, int is_verbose, int is_mm)
+//{
+//	bit32_t j;
+//	maqmap_t *m = maqmap_read_header(fpin);
+//	maqmap1_t *m1, mm1;
+//	m1 = &mm1;
+//	while (maqmap_read1(fpin, m1)) {
+//		fprintf(fpout, "%s\t%s\t%d\t%c\t%d\t%u\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d",
+//				m1->name, m->ref_name[m1->seqid], (m1->pos>>1) + 1,
+//				(m1->pos&1)? '-' : '+', m1->dist, m1->flag, m1->map_qual, (signed char)m1->seq[MAX_READLEN-1],
+//				m1->alt_qual, m1->info1&0xf, m1->info2, m1->c[0], m1->c[1], m1->size);
+//		if (is_verbose) {
+//			fputc('\t', fpout);
+//			for (j = 0; j != m1->size; ++j) {
+//				if (m1->seq[j] == 0) fputc('n', fpout);
+//				else if ((m1->seq[j]&0x3f) < 27) fputc("acgt"[m1->seq[j]>>6&3], fpout);
+//				else fputc("ACGT"[m1->seq[j]>>6&3], fpout);
+//			}
+//			fputc('\t', fpout);
+//			for (j = 0; j != m1->size; ++j)
+//				fputc((m1->seq[j]&0x3f) + 33, fpout);
+//		}
+//		if (is_mm) {
+//			bit64_t *p = (bit64_t*)(m1->seq + 55);
+//			fprintf(fpout, "\t%llx", *p);
+//		}
+//		fputc('\n', fpout);
+//	}
+//	maq_delete_maqmap(m);
+//}
 
-int ma_mapview(int argc, char *argv[])
-{
-	int c, is_verbose = 1, is_mm = 0;
-	while ((c = getopt(argc, argv, "bN")) >= 0) {
-		switch (c) {
-		case 'b': is_verbose = 0; break;
-		case 'N': is_mm = 1; break;
-		}
-	}
-	if (argc == optind) {
-		REprintf("Usage: maq mapview [-bN] <in.map>\n");
-		return 1;
-	}
-	gzFile fp = (strcmp(argv[optind], "-") == 0)? gzdopen(STDIN_FILENO, "r") : gzopen(argv[optind], "r");
-	mapview_core(stdout, fp, is_verbose, is_mm);
-	gzclose(fp);
-	return 0;
-}
+//int ma_mapview(int argc, char *argv[])
+//{
+//	int c, is_verbose = 1, is_mm = 0;
+//	while ((c = getopt(argc, argv, "bN")) >= 0) {
+//		switch (c) {
+//		case 'b': is_verbose = 0; break;
+//		case 'N': is_mm = 1; break;
+//		}
+//	}
+//	if (argc == optind) {
+//		REprintf("Usage: maq mapview [-bN] <in.map>\n");
+//		return 1;
+//	}
+//	gzFile fp = (strcmp(argv[optind], "-") == 0)? gzdopen(STDIN_FILENO, "r") : gzopen(argv[optind], "r");
+//	mapview_core(stdout, fp, is_verbose, is_mm);
+//	gzclose(fp);
+//	return 0;
+//}
 
 int ma_mapvalidate(int argc, char *argv[])
 {
