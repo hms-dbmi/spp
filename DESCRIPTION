@@ -1,14 +1,14 @@
 Package: spp
 Type: Package
 Title: ChIP-Seq Processing Pipeline
-Version: 1.15.3
+Version: 1.15.4
 Date: 2018-02-01
 Author: Peter K
 Description: Kharchenko PV (2008) <DOI:10.1038/nbt.1508>
 Depends: R (>= 3.3.0), Rcpp
 Imports: Rsamtools, caTools, parallel, graphics, stats
 Suggests: methods
-LinkingTo: Rcpp, BH
+LinkingTo: Rcpp, BH (>= 1.66)
 OS_type: unix
 Maintainer: Peter Kharchenko <Peter_Kharchenko@hms.harvard.edu> 
 Description: R package for analysis of ChIP-seq and other functional sequencing data.
