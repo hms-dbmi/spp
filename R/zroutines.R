@@ -2215,12 +2215,13 @@ densum <- function(vin,bw=5,dw=3,match.wt.f=NULL,return.x=T,from=min(vin),to=max
   if(new.code) {
     storage.mode(step) <- storage.mode(dlength) <- storage.mode(bw) <- storage.mode(dw) <-"integer";
     dout <- .Call("ccdensum",pos,tc,spos,bw,dw,dlength,step);
-  } else {
-    dout <- numeric(dlength); storage.mode(dout) <- "double";
-    storage.mode(dlength) <- "integer";
-    #.C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout,DUP=F);
-    .C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout);
   }
+# else {
+#    dout <- numeric(dlength); storage.mode(dout) <- "double";
+ #   storage.mode(dlength) <- "integer";
+  #  #.C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout,DUP=F);
+   # .C("cdensum",n,pos,tc,spos,bw,dw,dlength,step,dout);
+  #}
   
   
   if(return.x) {

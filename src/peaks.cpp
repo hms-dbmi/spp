@@ -799,6 +799,9 @@ extern "C" {
     } else {
       UNPROTECT(4);
     }
+
+    //free-ing allocated space for array
+    delete[] s;
     return(ans_R);
   }
 
