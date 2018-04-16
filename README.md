@@ -6,9 +6,9 @@ Please see [package homepage](http://compbio.med.harvard.edu/Supplements/ChIP-se
 A unix-flavored OS with R (>= 3.3.0) installed.
 
 ## Installation
-Since package version 1.15.4 SPP is available on [CRAN](https://cran.r-project.org/web/packages/spp/index.html)
+Since version 1.15.4 spp is available on [CRAN](https://cran.r-project.org/web/packages/spp/index.html)
 
-Alternatively you can use modtools to install SPP:
+Alternatively you can use modtools to install spp:
 
 ```
 require(devtools)
@@ -22,4 +22,4 @@ download a .tar.gz containing the [latest release](https://github.com/hms-dbmi/s
 R CMD INSTALL spp_1.13.tar.gz
 ```
 
-Note: Since package version 1.15.4 the Boost headers are supplied by [BH package](https://cran.r-project.org/web/packages/BH/index.html) as suggested by CRAN package guidelines.
+Note: Since version 1.15.4 the Boost headers are supplied by [BH package](https://cran.r-=project.org/web/packages/BH/index.html) as suggested by CRAN package guidelines.
