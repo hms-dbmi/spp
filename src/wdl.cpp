@@ -181,7 +181,7 @@ extern "C" {
 	double varn=0;
 	double num=0;
 	double val=-1e3;
-	if(mp>0 & mn>0) {
+	if((mp>0) & (mn>0)) {
 	  for(int k=0;k<=(os-is);k++) {
 	    int xp1=x[i-os+k];
 	    int xp2=x[i+os-k];
