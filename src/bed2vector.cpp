@@ -45,11 +45,11 @@ public:
 #ifdef HAVE_LIBBZ2
 int get_bzline(BZFILE* b,string& line) {
   char c;
-  int     nBuf;
+  //int nBuf;
   int bzerror=BZ_OK;
 
   while(bzerror == BZ_OK)  {  
-    nBuf=BZ2_bzRead(&bzerror, b, &c, 1);
+    //nBuf=BZ2_bzRead(&bzerror, b, &c, 1);
     if(bzerror==BZ_OK) {
       if(c=='\n') {
 	return bzerror;
@@ -556,6 +556,7 @@ SEXP read_meland_old(SEXP filename) {
     PROTECT(tv=allocVector(INTSXP,csi->size()));   np++;
     PROTECT(nv=allocVector(INTSXP,csi->size()));   np++;
     PROTECT(lv=allocVector(INTSXP,csi->size()));   np++;
+    PROTECT(sv=allocVector(STRSXP,csi->size()));   //add this here to avoid [-Wmaybe-uninitialized]
     if(read_names) {
       PROTECT(sv=allocVector(STRSXP,csi->size()));   np++;
     }
@@ -651,8 +652,9 @@ SEXP read_eland_mismatches(SEXP filename) {
       sit++; 
       string seq=*sit++; 
       string str_nm=*sit++;
-      int nm=0;
+      //int nm=0;
       if(str_nm[0]=='U') {
+        int nm=0; //insert variable declaration here
 	nm=atoi((str_nm.c_str()+1));
       } else {
 	continue;
@@ -938,6 +940,7 @@ SEXP read_eland_mismatches(SEXP filename) {
     SEXP tv,nv,sv;
     PROTECT(tv=allocVector(INTSXP,csi->size()));   np++;
     PROTECT(nv=allocVector(INTSXP,csi->size()));   np++;
+    PROTECT(sv=allocVector(STRSXP,csi->size())); //putting declaration after definition to avoid[-Wmaybe-uninitialized]
     if(read_names) {
       PROTECT(sv=allocVector(STRSXP,csi->size()));   np++;
     }
@@ -1071,7 +1074,10 @@ SEXP read_eland_mismatches(SEXP filename) {
       string str_nm=*sit++;
       // count non-digit characters
       int nm=0;
-      for(int i=0;i<str_nm.size();i++) {
+
+      int iloop=str_nm.size();//creating dummy variable for the loop below to avoid [-Wsign-compare]
+      for(int i=0;i<iloop;i++) {
+      // for(int i=0;i<str_nm.size();i++) {
 	if(!isdigit(str_nm[i])) { nm++; }
       }
       

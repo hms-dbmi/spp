@@ -2642,7 +2642,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 CPPFLAGS="${CPPFLAGS} ${PKG_CPPFLAGS}"
-CXXFLAGS="${CXXFLAGS}  ${PKG_CXXFLAGS}"
+CXXFLAGS="${CXXFLAGS} ${PKG_CXXFLAGS}"
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CFLAGS="${CFLAGS} ${PKG_CFLAGS}"
 
