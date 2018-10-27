@@ -21,6 +21,7 @@ extern void cdensum(void *, void *, void *, void *, void *, void *, void *, void
 extern SEXP ccdensum(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP cwindow_n_tags(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP cwindow_n_tags_around(SEXP, SEXP, SEXP, SEXP);
+extern SEXP find_peaks(SEXP, SEXP, SEXP);
 extern SEXP find_poisson_enrichment_clusters(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP get_relative_coordinates(SEXP, SEXP, SEXP);
 extern SEXP spp_lwcc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -45,6 +46,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"ccdensum",                         (DL_FUNC) &ccdensum,                          7},
     {"cwindow_n_tags",                   (DL_FUNC) &cwindow_n_tags,                    5},
     {"cwindow_n_tags_around",            (DL_FUNC) &cwindow_n_tags_around,             4},
+    {"find_peaks",                       (DL_FUNC) &find_peaks,                        3},
     {"find_poisson_enrichment_clusters", (DL_FUNC) &find_poisson_enrichment_clusters,  8},
     {"get_relative_coordinates",         (DL_FUNC) &get_relative_coordinates,          3},
     {"spp_lwcc",                         (DL_FUNC) &spp_lwcc,                             14},
