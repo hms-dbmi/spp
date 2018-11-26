@@ -87,6 +87,8 @@ extern "C" {
 
 
     SEXP nv;
+    PROTECT(nv=allocVector(REALSXP,n_x)); //putting declaration also here to avoid[-Wmaybe-uninitialized]
+
     double *d_nv;
     vector<int> ppos;
     vector<double> pval;
@@ -181,7 +183,7 @@ extern "C" {
 	double varn=0;
 	double num=0;
 	double val=-1e3;
-	if(mp>0 & mn>0) {
+	if((mp>0) & (mn>0)) {
 	  for(int k=0;k<=(os-is);k++) {
 	    int xp1=x[i-os+k];
 	    int xp2=x[i+os-k];
@@ -309,7 +311,9 @@ extern "C" {
       int* rpp=INTEGER(rpp_R);
       double* rpv=REAL(rpv_R);
 
-      for(int i=0;i<ppos.size();i++) {
+	  int iloop=ppos.size(); //creating dummy variable for the loop below to avoid [-Wsign-compare]
+      for(int i=0;i<iloop;i++) {
+      //for(int i=0;i<ppos.size();i++) {
 	rpp[i]=ppos[i];
 	rpv[i]=pval[i];
       }
@@ -401,6 +405,7 @@ extern "C" {
     int bg_nn2=0;
     
     SEXP nv;
+    PROTECT(nv=allocVector(REALSXP,n_x)); //putting declaration also here to avoid[-Wmaybe-uninitialized]
     double *d_nv;
     vector<int> ppos;
     vector<double> pval;
@@ -628,7 +633,9 @@ extern "C" {
       int* rpp=INTEGER(rpp_R);
       double* rpv=REAL(rpv_R);
 
-      for(int i=0;i<ppos.size();i++) {
+      int iloop=ppos.size(); //creating dummy variable for the loop below to avoid [-Wsign-compare]
+	  for(int i=0;i<iloop;i++) {
+      //for(int i=0;i<ppos.size();i++) {
 	rpp[i]=ppos[i];
 	rpv[i]=pval[i];
       }

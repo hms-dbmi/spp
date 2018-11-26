@@ -2,6 +2,7 @@ import(caTools, parallel, graphics, stats, Rcpp)
 importFrom("utils", "installed.packages", "write.table")
 
 #export(t.find.min.saturated.enr)
+export(points_withinFunction)
 export(points.within)
 #export(t.plotavcc)
 #export(t.plotavccl)

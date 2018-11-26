@@ -13,7 +13,7 @@ void cdensum(int *n, double *pos, double *tc, double *spos, int *bw,int *dw, int
 {
   int i,j;
  
-  double epos= *spos + ((double) *npos);
+  //double epos= *spos + ((double) *npos);
   double dbw=(double) *bw;
   for(i = 0; i< *n; i++) {
     // size of the window to which the contributions should be added
