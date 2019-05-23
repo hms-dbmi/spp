@@ -1,7 +1,7 @@
 Package: spp
 Type: Package
 Title: ChIP-Seq Processing Pipeline
-Version: 1.15.5
+Version: 1.15.6
 Author: Peter K
 Date: 2018-07-19
 Depends: R (>= 3.3.0), Rcpp

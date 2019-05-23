@@ -24,7 +24,7 @@ extern SEXP cwindow_n_tags_around(SEXP, SEXP, SEXP, SEXP);
 extern SEXP find_poisson_enrichment_clusters(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP get_relative_coordinates(SEXP, SEXP, SEXP);
 extern SEXP spp_lwcc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP points_within(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP points_withinC(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP read_arachne(SEXP);
 extern SEXP read_arachne_long(SEXP);
 extern SEXP read_binmaqmap(SEXP, SEXP);
@@ -48,7 +48,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"find_poisson_enrichment_clusters", (DL_FUNC) &find_poisson_enrichment_clusters,  8},
     {"get_relative_coordinates",         (DL_FUNC) &get_relative_coordinates,          3},
     {"spp_lwcc",                         (DL_FUNC) &spp_lwcc,                             14},
-    {"points_within",                    (DL_FUNC) &points_within,                     6},
+    {"points_withinC",                    (DL_FUNC) &points_withinC,                     6},
     {"read_arachne",                     (DL_FUNC) &read_arachne,                      1},
     {"read_arachne_long",                (DL_FUNC) &read_arachne_long,                 1},
     {"read_binmaqmap",                   (DL_FUNC) &read_binmaqmap,                    2},

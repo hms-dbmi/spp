@@ -1,15 +1,15 @@
-\name{points_withinFunction}
-\alias{points_withinFunction}
+\name{points_within}
+\alias{points_within}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
  Find points within
 }
 \description{
-points_withinFunction substitutes the deprecated function 
+points_within substitutes the deprecated function 
 "points.within"
 }
 \usage{
-points_withinFunction(x, fs, fe, return.list = F, return.unique = F,
+points_within(x, fs, fe, return.list = F, return.unique = F,
               sorted = F, return.point.counts = F, ...)
 }
 %- maybe also 'usage' for other objects documented here.
