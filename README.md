@@ -9,7 +9,7 @@ A unix-flavored OS with R (>= 3.3.0) installed.
 Since version 1.15.4 spp is available on [CRAN](https://CRAN.R-project.org/package=spp) and can be installed using the command
 
 ```
-install.pacakges("spp", dependencies=TRUE)
+install.packages("spp", dependencies=TRUE)
 ```
 
 
