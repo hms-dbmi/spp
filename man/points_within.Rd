@@ -1,14 +1,15 @@
-\name{points.within}
-\alias{points.within}
+\name{points_within}
+\alias{points_within}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
  Find points within
 }
 \description{
- Do something with Points.within
+points_within substitutes the deprecated function 
+"points.within"
 }
 \usage{
-points.within(x, fs, fe, return.list = F, return.unique = F,
+points_within(x, fs, fe, return.list = F, return.unique = F,
               sorted = F, return.point.counts = F, ...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -85,7 +86,7 @@ function (x, fs, fe, return.list = F, return.unique = F, sorted = F,
         rpc <- 0
     }
     storage.mode(iu) <- storage.mode(il) <- storage.mode(rpc) <- "integer"
-    result <- .Call("points_within", x, se, fi, il, iu, rpc)
+    result <- .Call("points_withinC", x, se, fi, il, iu, rpc)
     if (!sorted & !return.point.counts) {
         result <- result[ox]
     }
@@ -93,7 +94,3 @@ function (x, fs, fe, return.list = F, return.unique = F, sorted = F,
   }
 }
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

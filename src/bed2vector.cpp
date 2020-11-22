@@ -44,7 +44,8 @@ public:
 
 #ifdef HAVE_LIBBZ2
 int get_bzline(BZFILE* b,string& line) {
-  char c;
+  //char c;
+  char c='a';
   //int nBuf;
   int bzerror=BZ_OK;
 

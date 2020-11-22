@@ -187,7 +187,7 @@ extern "C" {
   // fi_R - vector of signed fragment indecies
   // return_list_R - whether a list of fragments should be returned for each point
   // return_unique_R - whether points in multiple fragments should be omitted
-  SEXP points_within(SEXP x_R,SEXP se_R,SEXP fi_R,SEXP return_list_R,SEXP return_unique_R,SEXP return_point_counts_R) {
+  SEXP points_withinC(SEXP x_R,SEXP se_R,SEXP fi_R,SEXP return_list_R,SEXP return_unique_R,SEXP return_point_counts_R) {
 #ifdef DEBUG  
     Rprintf("start\n");
 #endif

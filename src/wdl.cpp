@@ -87,13 +87,15 @@ extern "C" {
 
 
     SEXP nv;
-    PROTECT(nv=allocVector(REALSXP,n_x)); //putting declaration also here to avoid[-Wmaybe-uninitialized]
+    //UNPROTECT(nv=allocVector(REALSXP,n_x)); //putting declaration also here to avoid[-Wmaybe-uninitialized]
+    nv=allocVector(REALSXP,n_x); //putting declaration also here to avoid[-Wmaybe-uninitialized]
 
     double *d_nv;
     vector<int> ppos;
     vector<double> pval;
     if(!return_peaks) {
-      PROTECT(nv=allocVector(REALSXP,n_x)); 
+      //UNPROTECT(nv=allocVector(REALSXP,n_x)); 
+      nv=allocVector(REALSXP,n_x); 
       d_nv=REAL(nv);
       for(int i=0;i<n_x;i++) {
 	d_nv[i]=0;
@@ -306,8 +308,11 @@ extern "C" {
       }
 
       SEXP rpp_R,rpv_R;
-      PROTECT(rpp_R=allocVector(INTSXP,ppos.size())); 
-      PROTECT(rpv_R=allocVector(REALSXP,ppos.size())); 
+      //UNPROTECT(rpp_R=allocVector(INTSXP,ppos.size())); 
+      //UNPROTECT(rpv_R=allocVector(REALSXP,ppos.size())); 
+      rpp_R=allocVector(INTSXP,ppos.size()); 
+      rpv_R=allocVector(REALSXP,ppos.size()); 
+
       int* rpp=INTEGER(rpp_R);
       double* rpv=REAL(rpv_R);
 
@@ -319,19 +324,21 @@ extern "C" {
       }
     
       SEXP ans_R, names_R;
-      PROTECT(names_R = allocVector(STRSXP, 2));
+      //UNPROTECT(names_R = allocVector(STRSXP, 2));
+      names_R = allocVector(STRSXP, 2);
       SET_STRING_ELT(names_R, 0, mkChar("x"));
       SET_STRING_ELT(names_R, 1, mkChar("v"));
     
-      PROTECT(ans_R = allocVector(VECSXP, 2));
+      //UNPROTECT(ans_R = allocVector(VECSXP, 2));
+      ans_R = allocVector(VECSXP, 2);
       SET_VECTOR_ELT(ans_R, 0, rpp_R);
       SET_VECTOR_ELT(ans_R, 1, rpv_R);
       setAttrib(ans_R, R_NamesSymbol, names_R);
   
-      UNPROTECT(4);
+      //UNPROTECT(4);
       return(ans_R);
     } else {
-      UNPROTECT(1);
+      //UNPROTECT(1);
       return(nv);
     }
 
@@ -405,12 +412,15 @@ extern "C" {
     int bg_nn2=0;
     
     SEXP nv;
-    PROTECT(nv=allocVector(REALSXP,n_x)); //putting declaration also here to avoid[-Wmaybe-uninitialized]
+    //UNPROTECT(nv=allocVector(REALSXP,n_x)); //putting declaration also here to avoid[-Wmaybe-uninitialized]
+    nv=allocVector(REALSXP,n_x); //putting declaration also here to avoid[-Wmaybe-uninitialized]
     double *d_nv;
     vector<int> ppos;
     vector<double> pval;
     if(!return_peaks) {
-      PROTECT(nv=allocVector(REALSXP,n_x)); 
+      //UNPROTECT(nv=allocVector(REALSXP,n_x)); 
+      nv=allocVector(REALSXP,n_x); 
+
       d_nv=REAL(nv);
       for(int i=0;i<n_x;i++) {
 	d_nv[i]=0;
@@ -628,8 +638,11 @@ extern "C" {
       }
 
       SEXP rpp_R,rpv_R;
-      PROTECT(rpp_R=allocVector(INTSXP,ppos.size())); 
-      PROTECT(rpv_R=allocVector(REALSXP,ppos.size())); 
+      //UNPROTECT(rpp_R=allocVector(INTSXP,ppos.size())); 
+      //UNPROTECT(rpv_R=allocVector(REALSXP,ppos.size())); 
+      rpp_R=allocVector(INTSXP,ppos.size()); 
+      rpv_R=allocVector(REALSXP,ppos.size()); 
+
       int* rpp=INTEGER(rpp_R);
       double* rpv=REAL(rpv_R);
 
@@ -641,19 +654,21 @@ extern "C" {
       }
     
       SEXP ans_R, names_R;
-      PROTECT(names_R = allocVector(STRSXP, 2));
+      //UNPROTECT(names_R = allocVector(STRSXP, 2));
+      names_R = allocVector(STRSXP, 2);
       SET_STRING_ELT(names_R, 0, mkChar("x"));
       SET_STRING_ELT(names_R, 1, mkChar("v"));
     
-      PROTECT(ans_R = allocVector(VECSXP, 2));
+      //UNPROTECT(ans_R = allocVector(VECSXP, 2));
+      ans_R = allocVector(VECSXP, 2);
       SET_VECTOR_ELT(ans_R, 0, rpp_R);
       SET_VECTOR_ELT(ans_R, 1, rpv_R);
       setAttrib(ans_R, R_NamesSymbol, names_R);
   
-      UNPROTECT(4);
+      //UNPROTECT(4);
       return(ans_R);
     } else {
-      UNPROTECT(1);
+      //UNPROTECT(1);
       return(nv);
     }
 
