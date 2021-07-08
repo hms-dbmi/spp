@@ -63,7 +63,7 @@ extern "C" {
   m1 = &mm1;
 
   if (!f)  { 
-    Rprintf("can't open input file \"",fname,"\"\n"); 
+    Rprintf("can't open input file \"%s\"\n",fname);
   }  else {
     Rprintf("opened %s\n",fname);
 

@@ -440,9 +440,11 @@ SEXP read_meland_old(SEXP filename) {
 
   
   FILE *f=fopen(fname,"rb");
-  if (!f)  { Rprintf("can't open input file \"",fname,"\"\n"); }
-  
-  Rprintf("opened %s\n",fname);
+  if (!f)  { 
+	  Rprintf("can't open input file \"%s\"\n",fname); 
+  } else { 
+	  Rprintf("opened %s\n",fname);
+  }
 
 
   // read in bed line
@@ -633,9 +635,11 @@ SEXP read_eland_mismatches(SEXP filename) {
 
   
   FILE *f=fopen(fname,"rb");
-  if (!f)  { Rprintf("can't open input file \"",fname,"\"\n"); }
-
-  Rprintf("opened %s\n",fname);
+  if (!f)  { 
+	  Rprintf("can't open input file \"%s\"\n",fname); 
+  } else { 
+	  Rprintf("opened %s\n",fname);
+  }
 
   // read in bed line
   string line;
