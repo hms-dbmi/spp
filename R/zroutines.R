@@ -1273,6 +1273,28 @@ wtd <- function(x,y,s,e,whs=200,return.peaks=T,min.thr=5,min.dist=200,step=1,dir
 
   rx <- c(s-whs,e+whs);
 
+  # sparse path: no masking, peaks only, whole-number positions
+  if(ignore.masking && return.peaks) {
+    wholenum <- function(v) { is.integer(v) || all(v==floor(v)) }
+    if(wholenum(rx) && wholenum(x) && wholenum(y) && (is.null(bg.x) || (wholenum(bg.x) && wholenum(bg.y)))) {
+      sparse.hist <- function(v) {
+        r <- rle(sort(v));
+        list(pos=as.integer(r$values)-as.integer(rx[1]), cnt=as.integer(r$lengths));
+      }
+      sx <- sparse.hist(x); sy <- sparse.hist(y);
+      if(!is.null(bg.x) && length(bg.x)>0) {
+        bg.subtract <- 1L;
+        sbx <- sparse.hist(bg.x); sby <- sparse.hist(bg.y);
+        if(bg.whs!=whs) { bg.weight <- bg.weight*whs/bg.whs; }
+      } else {
+        bg.subtract <- 0L;
+        sbx <- sby <- list(pos=integer(0),cnt=integer(0));
+      }
+      z <- .Call("spp_wtd_sparse",sx$pos,sx$cnt,sy$pos,sy$cnt,as.integer(diff(rx)+1),as.integer(whs),as.integer(min.dist),as.double(min.thr),as.integer(direct.count),as.double(tag.weight),bg.subtract,sbx$pos,sbx$cnt,sby$pos,sby$cnt,as.integer(bg.whs),as.double(bg.weight),as.integer(round.up),PACKAGE="spp");
+      return(data.frame(x=(z$x+rx[1])*step,y=z$v));
+    }
+  }
+
   # compile tag vectors
   xt <- table(x);
   xh <- integer(diff(rx)+1);
