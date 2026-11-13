@@ -919,7 +919,13 @@ tag.scc <- function(tags,srange=c(50,250),bin=1,tt=NULL,llim=10) {
            mp*mn*(l-length(ptv)-length(ntv)+length(mi)))/ss);
   }
   shifts <- floor(seq(srange[1],srange[2],by=bin)/bin+0.5);
-  scc <- unlist(lapply(shifts,t.cor)); names(scc) <- shifts*bin;
+  if(length(ptc)>0 && length(ntc)>0 && !is.unsorted(ptc,strictly=TRUE) && !is.unsorted(rev(ntc),strictly=TRUE)) {
+    r <- .Call("tag_scc_shifts",as.integer(ptc),as.integer(ntc),as.numeric(ptv),as.numeric(ntv),as.numeric(shifts));
+    scc <- (r[1,] - mn*r[2,] - mp*r[3,] + mp*mn*(l-length(ptv)-length(ntv)+r[4,]))/ss;
+  } else {
+    scc <- unlist(lapply(shifts,t.cor));
+  }
+  names(scc) <- shifts*bin;
   return(scc);
 }
 

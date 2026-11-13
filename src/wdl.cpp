@@ -903,3 +903,41 @@ extern "C" {
 }
 
 
+
+
+// per-shift sums for tag.scc: ptc ascending, ntc descending (both strictly), values ptv/ntv.
+// Returns a 4 x nshift matrix: matched sum of ptv*ntv, unmatched ptv sum, unmatched ntv sum,
+// matched count. Sums accumulate in long double in R's sum() order.
+extern "C" SEXP tag_scc_shifts(SEXP ptc_, SEXP ntc_, SEXP ptv_, SEXP ntv_, SEXP shifts_) {
+  const int np = LENGTH(ptc_), nn = LENGTH(ntc_), ns = LENGTH(shifts_);
+  const int *ptc = INTEGER(ptc_), *ntc = INTEGER(ntc_);
+  const double *ptv = REAL(ptv_), *ntv = REAL(ntv_), *sh = REAL(shifts_);
+  SEXP res = PROTECT(allocMatrix(REALSXP, 4, ns));
+  double *out = REAL(res);
+  unsigned char *mark = (unsigned char *) R_alloc(nn > 0 ? nn : 1, 1);
+  for (int k = 0; k < ns; k++) {
+    const long long s = (long long) sh[k];
+    long double a = 0, b = 0, c = 0;
+    double nm = 0;
+    for (int j = 0; j < nn; j++) mark[j] = 0;
+    int j = nn - 1;
+    for (int i = 0; i < np; i++) {
+      const long long t = (long long) ptc[i] + s;
+      while (j >= 0 && (long long) ntc[j] < t) j--;
+      if (j >= 0 && (long long) ntc[j] == t) {
+        volatile double p = ptv[i] * ntv[j];
+        a += (double) p;
+        mark[j] = 1;
+        nm += 1;
+      } else {
+        b += ptv[i];
+      }
+    }
+    if (nm > 0) {
+      for (int q = 0; q < nn; q++) if (!mark[q]) c += ntv[q];
+    }
+    out[4*k] = (double) a; out[4*k+1] = (double) b; out[4*k+2] = (double) c; out[4*k+3] = nm;
+  }
+  UNPROTECT(1);
+  return res;
+}
