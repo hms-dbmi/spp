@@ -865,11 +865,21 @@ output.binding.results <- function(results,filename) {
 # calculates tag strand cross-correlation for a range of shifts (on positive strand)
 tag.scc <- function(tags,srange=c(50,250),bin=1,tt=NULL,llim=10) {
   if(is.null(tt)) {
-    tt <- table(sign(tags)*as.integer(floor(abs(tags)/bin+0.5)));
+    bv <- sort.int(sign(tags)*as.integer(floor(abs(tags)/bin+0.5)),method="radix");
+    nb <- length(bv);
+    if(nb>0) {
+      bs <- c(1L,which(bv[-1L]!=bv[-nb])+1L);
+      tc <- as.integer(bv[bs]);
+      tt <- as.numeric(diff(c(bs,nb+1L)));
+    } else {
+      tc <- integer(0); tt <- numeric(0);
+    }
+    if(!is.null(llim)) { l <- mean(tt); ik <- tt<llim*l; tc <- tc[ik]; tt <- tt[ik] }
+  } else {
+    if(!is.null(llim)) { l <- mean(tt); tt <- tt[tt<llim*l] }
+    tc <- as.integer(names(tt));
+    tt <- as.numeric(tt);
   }
-  if(!is.null(llim)) { l <- mean(tt); tt <- tt[tt<llim*l] }
-  tc <- as.integer(names(tt));
-  tt <- as.numeric(tt);
 
   pv <- tt; pv[tc<0]<-0;
   nv <- tt; nv[tc>0]<-0;
@@ -893,10 +903,11 @@ tag.scc <- function(tags,srange=c(50,250),bin=1,tt=NULL,llim=10) {
 
   t.cor <- function(s) {
     smi <- match(ptc+s,ntc);
-    return((sum(ptv[!is.na(smi)]*ntv[na.omit(smi)]) -
-           mn*sum(ptv[is.na(smi)]) -
-           mp*sum(ntv[-na.omit(smi)]) +
-           mp*mn*(l-length(ptv)-length(ntv)+length(which(!is.na(smi)))))/ss);
+    ok <- !is.na(smi); mi <- smi[ok];
+    return((sum(ptv[ok]*ntv[mi]) -
+           mn*sum(ptv[!ok]) -
+           mp*sum(ntv[-mi]) +
+           mp*mn*(l-length(ptv)-length(ntv)+length(mi)))/ss);
   }
   shifts <- floor(seq(srange[1],srange[2],by=bin)/bin+0.5);
   scc <- unlist(lapply(shifts,t.cor)); names(scc) <- shifts*bin;
