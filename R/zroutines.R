@@ -1622,7 +1622,7 @@ window.chr.call.mirror.binding <- function(ctvl,window.size,debug=T, chr="NA", c
   if(is.null(ctv)) { return(data.frame(x=c(),y=c())) }
   if(length(ctv)<2) { return(data.frame(x=c(),y=c())) }
   
-  dr <- range(unlist(lapply(ctv,function(x) range(abs(x)))))
+  dr <- range(abs(ctv))
   n.windows <- ceiling(diff(dr)/window.size);
   
   
