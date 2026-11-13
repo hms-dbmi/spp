@@ -295,23 +295,32 @@ read.meland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
 remove.tag.anomalies <- function(data, bin=1,trim.fraction=1e-3,z=5,zo=3*z,var.base=0.1) {
   
   t.remove.tag.anomalies <- function(tv,bin=1,trim.fraction=1e-3,z=5,zo=3*z,return.indecies=F) {
-    tt <- table(floor(tv/bin));
+    # run lengths of the sorted bin indices replace table(): same values, same ascending order
+    sv <- sort.int(floor(tv/bin),method="radix");
+    nsv <- length(sv);
+    if(nsv>0) {
+      ends <- c(which(sv[-1L]!=sv[-nsv]),nsv);
+      tn <- diff(c(0L,ends)); tp.all <- sv[ends];
+    } else {
+      tn <- integer(0); tp.all <- numeric(0);
+    }
 
     # trim value
-    stt <- sort(as.numeric(tt));
+    stt <- sort(as.numeric(tn));
     stt <- stt[1:(length(stt)*(1-trim.fraction))];
     mtc <- mean(stt); tcd <- sqrt(var(stt)+var.base);
 
     thr <- max(1,ceiling(mtc+z*tcd));
     thr.o <- max(1,ceiling(mtc+zo*tcd));
-    # filter tt
-    tt <- tt[tt>thr]
+    # filter the counts
+    keep <- tn>thr;
+    tp <- tp.all[keep];
+    tto <- tp[tn[keep]>thr.o];
     # get + and - tags
-    tp <- as.numeric(names(tt));
     pti <- tp>0;
     it <- intersect(tp[pti],(-1)*tp[!pti]);
     # add one-strand matches
-    it <- unique(c(it,tp[tt>thr.o]));
+    it <- unique(c(it,tto));
     sit <- c(it,(-1)*it);
     
     if(bin>1) {
