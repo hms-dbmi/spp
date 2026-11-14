@@ -2177,15 +2177,24 @@ dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,back
   }
 
   chrl <- intersect(names(d1),names(d2));
+  # the two counts are symmetric in (d1,d2), so one cached pair serves both argument orders
+  ce <- .ddr.cache;
+  pr <- list(wsize,min.tag.count.z,mcs);
+  if(length(chrl)>0 && !is.null(ce$p) && identical(ce$p,pr)) {
+    if(identical(d1,ce$a) && identical(d2,ce$b)) { return(ce$n[1]/ce$n[2]) }
+    if(identical(d1,ce$b) && identical(d2,ce$a)) { return(ce$n[2]/ce$n[1]) }
+  }
   ntc <- do.call(rbind,lapply(chrl,function(chr) {
     x1 <- tag.enrichment.clusters(abs(d1[[chr]]),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
     x2 <- tag.enrichment.clusters(abs(d2[[chr]]),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
     return(c(length(which(points_withinFunction(abs(d1[[chr]]),c(x1$s,x2$s)-wsize/2,c(x1$e,x2$e)+wsize/2)==-1)),length(which(points_withinFunction(abs(d2[[chr]]),c(x1$s,x2$s)-wsize/2,c(x1$e,x2$e)+wsize/2)==-1))))
   }))
   ntcs <- apply(ntc,2,sum);
+  ce$p <- pr; ce$a <- d1; ce$b <- d2; ce$n <- ntcs;
   #print(ntcs/c(sum(unlist(lapply(d1,length))),sum(unlist(lapply(d2,length)))));
   return(ntcs[1]/ntcs[2])
 }
+.ddr.cache <- new.env()
 
 # returns effective size of the dataset based on the same logic as dataset.density.ratio
 dataset.density.size <- function(d1,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T) {
