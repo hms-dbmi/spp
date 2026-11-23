@@ -295,23 +295,32 @@ read.meland.tags <- function(filename,read.tag.names=F,fix.chromosome.names=T) {
 remove.tag.anomalies <- function(data, bin=1,trim.fraction=1e-3,z=5,zo=3*z,var.base=0.1) {
   
   t.remove.tag.anomalies <- function(tv,bin=1,trim.fraction=1e-3,z=5,zo=3*z,return.indecies=F) {
-    tt <- table(floor(tv/bin));
+    # run lengths of the sorted bin indices replace table(): same values, same ascending order
+    sv <- sort.int(floor(tv/bin),method="radix");
+    nsv <- length(sv);
+    if(nsv>0) {
+      ends <- c(which(sv[-1L]!=sv[-nsv]),nsv);
+      tn <- diff(c(0L,ends)); tp.all <- sv[ends];
+    } else {
+      tn <- integer(0); tp.all <- numeric(0);
+    }
 
     # trim value
-    stt <- sort(as.numeric(tt));
+    stt <- sort(as.numeric(tn));
     stt <- stt[1:(length(stt)*(1-trim.fraction))];
     mtc <- mean(stt); tcd <- sqrt(var(stt)+var.base);
 
     thr <- max(1,ceiling(mtc+z*tcd));
     thr.o <- max(1,ceiling(mtc+zo*tcd));
-    # filter tt
-    tt <- tt[tt>thr]
+    # filter the counts
+    keep <- tn>thr;
+    tp <- tp.all[keep];
+    tto <- tp[tn[keep]>thr.o];
     # get + and - tags
-    tp <- as.numeric(names(tt));
     pti <- tp>0;
     it <- intersect(tp[pti],(-1)*tp[!pti]);
     # add one-strand matches
-    it <- unique(c(it,tp[tt>thr.o]));
+    it <- unique(c(it,tto));
     sit <- c(it,(-1)*it);
     
     if(bin>1) {
@@ -865,11 +874,21 @@ output.binding.results <- function(results,filename) {
 # calculates tag strand cross-correlation for a range of shifts (on positive strand)
 tag.scc <- function(tags,srange=c(50,250),bin=1,tt=NULL,llim=10) {
   if(is.null(tt)) {
-    tt <- table(sign(tags)*as.integer(floor(abs(tags)/bin+0.5)));
+    bv <- sort.int(sign(tags)*as.integer(floor(abs(tags)/bin+0.5)),method="radix");
+    nb <- length(bv);
+    if(nb>0) {
+      bs <- c(1L,which(bv[-1L]!=bv[-nb])+1L);
+      tc <- as.integer(bv[bs]);
+      tt <- as.numeric(diff(c(bs,nb+1L)));
+    } else {
+      tc <- integer(0); tt <- numeric(0);
+    }
+    if(!is.null(llim)) { l <- mean(tt); ik <- tt<llim*l; tc <- tc[ik]; tt <- tt[ik] }
+  } else {
+    if(!is.null(llim)) { l <- mean(tt); tt <- tt[tt<llim*l] }
+    tc <- as.integer(names(tt));
+    tt <- as.numeric(tt);
   }
-  if(!is.null(llim)) { l <- mean(tt); tt <- tt[tt<llim*l] }
-  tc <- as.integer(names(tt));
-  tt <- as.numeric(tt);
 
   pv <- tt; pv[tc<0]<-0;
   nv <- tt; nv[tc>0]<-0;
@@ -893,13 +912,20 @@ tag.scc <- function(tags,srange=c(50,250),bin=1,tt=NULL,llim=10) {
 
   t.cor <- function(s) {
     smi <- match(ptc+s,ntc);
-    return((sum(ptv[!is.na(smi)]*ntv[na.omit(smi)]) -
-           mn*sum(ptv[is.na(smi)]) -
-           mp*sum(ntv[-na.omit(smi)]) +
-           mp*mn*(l-length(ptv)-length(ntv)+length(which(!is.na(smi)))))/ss);
+    ok <- !is.na(smi); mi <- smi[ok];
+    return((sum(ptv[ok]*ntv[mi]) -
+           mn*sum(ptv[!ok]) -
+           mp*sum(ntv[-mi]) +
+           mp*mn*(l-length(ptv)-length(ntv)+length(mi)))/ss);
   }
   shifts <- floor(seq(srange[1],srange[2],by=bin)/bin+0.5);
-  scc <- unlist(lapply(shifts,t.cor)); names(scc) <- shifts*bin;
+  if(length(ptc)>0 && length(ntc)>0 && !is.unsorted(ptc,strictly=TRUE) && !is.unsorted(rev(ntc),strictly=TRUE)) {
+    r <- .Call("tag_scc_shifts",as.integer(ptc),as.integer(ntc),as.numeric(ptv),as.numeric(ntv),as.numeric(shifts));
+    scc <- (r[1,] - mn*r[2,] - mp*r[3,] + mp*mn*(l-length(ptv)-length(ntv)+r[4,]))/ss;
+  } else {
+    scc <- unlist(lapply(shifts,t.cor));
+  }
+  names(scc) <- shifts*bin;
   return(scc);
 }
 
@@ -1273,6 +1299,28 @@ wtd <- function(x,y,s,e,whs=200,return.peaks=T,min.thr=5,min.dist=200,step=1,dir
 
   rx <- c(s-whs,e+whs);
 
+  # sparse path: no masking, peaks only, whole-number positions
+  if(ignore.masking && return.peaks) {
+    wholenum <- function(v) { is.integer(v) || all(v==floor(v)) }
+    if(wholenum(rx) && wholenum(x) && wholenum(y) && (is.null(bg.x) || (wholenum(bg.x) && wholenum(bg.y)))) {
+      sparse.hist <- function(v) {
+        r <- rle(sort(v));
+        list(pos=as.integer(r$values)-as.integer(rx[1]), cnt=as.integer(r$lengths));
+      }
+      sx <- sparse.hist(x); sy <- sparse.hist(y);
+      if(!is.null(bg.x) && length(bg.x)>0) {
+        bg.subtract <- 1L;
+        sbx <- sparse.hist(bg.x); sby <- sparse.hist(bg.y);
+        if(bg.whs!=whs) { bg.weight <- bg.weight*whs/bg.whs; }
+      } else {
+        bg.subtract <- 0L;
+        sbx <- sby <- list(pos=integer(0),cnt=integer(0));
+      }
+      z <- .Call("spp_wtd_sparse",sx$pos,sx$cnt,sy$pos,sy$cnt,as.integer(diff(rx)+1),as.integer(whs),as.integer(min.dist),as.double(min.thr),as.integer(direct.count),as.double(tag.weight),bg.subtract,sbx$pos,sbx$cnt,sby$pos,sby$cnt,as.integer(bg.whs),as.double(bg.weight),as.integer(round.up),PACKAGE="spp");
+      return(data.frame(x=(z$x+rx[1])*step,y=z$v));
+    }
+  }
+
   # compile tag vectors
   xt <- table(x);
   xh <- integer(diff(rx)+1);
@@ -1580,7 +1628,7 @@ window.chr.call.mirror.binding <- function(ctvl,window.size,debug=T, chr="NA", c
   if(is.null(ctv)) { return(data.frame(x=c(),y=c())) }
   if(length(ctv)<2) { return(data.frame(x=c(),y=c())) }
   
-  dr <- range(unlist(lapply(ctv,function(x) range(abs(x)))))
+  dr <- range(abs(ctv))
   n.windows <- ceiling(diff(dr)/window.size);
   
   
@@ -2129,15 +2177,24 @@ dataset.density.ratio <- function(d1,d2,min.tag.count.z=4.3,wsize=1e3,mcs=0,back
   }
 
   chrl <- intersect(names(d1),names(d2));
+  # the two counts are symmetric in (d1,d2), so one cached pair serves both argument orders
+  ce <- .ddr.cache;
+  pr <- list(wsize,min.tag.count.z,mcs);
+  if(length(chrl)>0 && !is.null(ce$p) && identical(ce$p,pr)) {
+    if(identical(d1,ce$a) && identical(d2,ce$b)) { return(ce$n[1]/ce$n[2]) }
+    if(identical(d1,ce$b) && identical(d2,ce$a)) { return(ce$n[2]/ce$n[1]) }
+  }
   ntc <- do.call(rbind,lapply(chrl,function(chr) {
     x1 <- tag.enrichment.clusters(abs(d1[[chr]]),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
     x2 <- tag.enrichment.clusters(abs(d2[[chr]]),c(),wsize=wsize,bg.weight=0,min.tag.count.z=min.tag.count.z,mcs=mcs,either=F)
     return(c(length(which(points_withinFunction(abs(d1[[chr]]),c(x1$s,x2$s)-wsize/2,c(x1$e,x2$e)+wsize/2)==-1)),length(which(points_withinFunction(abs(d2[[chr]]),c(x1$s,x2$s)-wsize/2,c(x1$e,x2$e)+wsize/2)==-1))))
   }))
   ntcs <- apply(ntc,2,sum);
+  ce$p <- pr; ce$a <- d1; ce$b <- d2; ce$n <- ntcs;
   #print(ntcs/c(sum(unlist(lapply(d1,length))),sum(unlist(lapply(d2,length)))));
   return(ntcs[1]/ntcs[2])
 }
+.ddr.cache <- new.env()
 
 # returns effective size of the dataset based on the same logic as dataset.density.ratio
 dataset.density.size <- function(d1,min.tag.count.z=4.3,wsize=1e3,mcs=0,background.density.scaling=T) {

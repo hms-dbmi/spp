@@ -42,6 +42,81 @@ public:
 
 
 
+
+// Reads a file in large blocks and hands out its lines in place.  next() returns a
+// pointer to a NUL-terminated line (the newline is replaced by NUL) and its length.
+class BlockLines {
+public:
+  explicit BlockLines(FILE *f) : f_(f), buf_(1<<20), beg_(0), end_(0), eof_(false) {}
+  bool next(char **line, size_t *len) {
+    for(;;) {
+      char *base=&buf_[0];
+      char *nl=(end_>beg_) ? (char*)memchr(base+beg_,'\n',end_-beg_) : NULL;
+      if(nl) {
+	*nl='\0';
+	*line=base+beg_;
+	*len=nl-(base+beg_);
+	beg_=(nl-base)+1;
+	return true;
+      }
+      if(eof_) {
+	if(end_>beg_) { // last line without a newline
+	  base[end_]='\0';
+	  *line=base+beg_;
+	  *len=end_-beg_;
+	  beg_=end_;
+	  return true;
+	}
+	return false;
+      }
+      // move the partial line to the front, make room (and one byte for a terminator), read more
+      if(beg_>0) {
+	memmove(base,base+beg_,end_-beg_);
+	end_-=beg_;
+	beg_=0;
+      }
+      if(end_+1>=buf_.size()) { buf_.resize(buf_.size()*2); base=&buf_[0]; }
+      size_t got=fread(base+end_,1,buf_.size()-end_-1,f_);
+      if(got==0) { eof_=true; } else { end_+=got; }
+    }
+  }
+private:
+  FILE *f_;
+  vector<char> buf_;
+  size_t beg_, end_;
+  bool eof_;
+};
+
+// Index of the chromosome named [b,e), registering it when new.  The last hit is checked
+// before the hash map.
+struct ChrIndex {
+  unordered_map<string, int, hash<string>,equal_to<string> > cind_map;
+  vector<string> cnames;
+  int last;
+  ChrIndex() : last(-1) {}
+  // returns the index and sets *is_new when the chromosome was just registered
+  int get(const char *b, size_t n, bool *is_new) {
+    *is_new=false;
+    if(last>=0) {
+      const string& c=cnames[last];
+      if(c.size()==n && memcmp(c.data(),b,n)==0) { return last; }
+    }
+    string chr(b,n);
+    unordered_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+    int cind;
+    if(li==cind_map.end()) {
+      cind=cnames.size();
+      cnames.push_back(chr);
+      cind_map[chr]=cind;
+      *is_new=true;
+    } else {
+      cind=li->second;
+    }
+    last=cind;
+    return cind;
+  }
+};
+
 #ifdef HAVE_LIBBZ2
 int get_bzline(BZFILE* b,string& line) {
   char c;
@@ -1504,13 +1579,8 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  unordered_map<string, int, hash<string>,equal_to<string> > cind_map;
-  vector<string> cnames;
-  
-
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-  boost::char_separator<char> sep2(",");
+  ChrIndex chrs;
+  vector<string>& cnames=chrs.cnames;
 
   
   FILE *f=fopen(fname,"rb");
@@ -1531,86 +1601,60 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   Rprintf("opened %s\n",fname);
 
   // read in bed line
-  string line;
   int fcount=0;
+  string bzline;
+  BlockLines lines(f);
+  char *line; size_t llen;
+  for(;;) {
 #ifdef HAVE_LIBBZ2
-  while(get_a_line(f,b,bz2file,line)) {
-#else
-  while(get_a_line(f,line)) {
+    if(bz2file) {
+      if(!get_a_line(f,b,bz2file,bzline)) { break; }
+      line=&bzline[0]; llen=bzline.size();
+    } else
 #endif
+    {
+      // a line with no characters ends the input, as getline_local did
+      if(!lines.next(&line,&llen) || llen==0) { break; }
+    }
+    char *end=line+llen;
+    // tab-separated fields, empty ones kept; 0=name 1=strand 2=chr 3=position 4=sequence 7=mismatches
+    char *fb[8]; char *fe[8];
+    char *p=line;
+    bool done=false;
+    for(int k=0;k<8;k++) {
+      if(done) { fb[k]=end; fe[k]=end; continue; }
+      char *tab=(char*)memchr(p,'\t',end-p);
+      fb[k]=p;
+      if(tab) { fe[k]=tab; p=tab+1; } else { fe[k]=end; done=true; }
+    }
+    for(int k=0;k<8;k++) { *fe[k]='\0'; }
 
-#ifdef DEBUG  
-    Rprintf("line: %s\n",line.c_str());
-#endif
+    int fpos=atoi(fb[3]);
+    int len=fe[4]-fb[4];
+    if(*fb[1]=='-') {
+      fpos=-1*(fpos+len-1);
+    }
+    // determine number of mismatches
+    int nm=0;
+    if(fe[7]>fb[7]) {
+      nm=1;
+      for(const char *q=fb[7];q<fe[7];q++) { if(*q==',') nm++; }
+    }
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string tagname=*sit++;
-      string str_strand=*sit++;
-      string chr=*sit++; 
-
-      string str_pos=*sit++;
-      int fpos=atoi(str_pos.c_str());
-
-      string sequence=*sit++;
-      sit++; sit++;
-      string mm=*sit++;
-
-      int len=sequence.size();
-      if(str_strand[0]=='-') {
-	fpos=-1*(fpos+len-1);
-      }
-      // determine number of mismatches
-      int nm=0;
-      if(mm.size()>0) {
-	nm++;
-	string::size_type tp(0);
-	while(tp!=string::npos) {
-	  tp = mm.find(",",tp);
-	  if(tp!=string::npos) {
-	    tp++;
-	    ++nm;
-	  }
-	}
-      }
-
-
-      
-      // determine the chromosome index
-      unordered_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
-      int cind=-1;
-      if(li==cind_map.end()) {
-	// register new chromosome
-	cind=cnames.size();
-	cnames.push_back(chr);
-	cind_map[chr]=cind;
-	// allocate new pos vector
-	pos.push_back(vector<int>());
-	posnm.push_back(vector<int>());
-	if(read_names) {
-	  tagnames.push_back(vector<string>());
-	}
-#ifdef DEBUG  
-	Rprintf("registered new chromosome %s with cind=%d, pos.size=%d\n",chr.c_str(),cind,pos.size());
-#endif
-      } else {
-	cind=li->second;
-      }
-      fcount++;
-      (pos[cind]).push_back(fpos);
-      (posnm[cind]).push_back(nm);
+    bool is_new;
+    int cind=chrs.get(fb[2],fe[2]-fb[2],&is_new);
+    if(is_new) {
+      pos.push_back(vector<int>());
+      posnm.push_back(vector<int>());
       if(read_names) {
-	(tagnames[cind]).push_back(tagname);
+	tagnames.push_back(vector<string>());
       }
-#ifdef DEBUG  
-      Rprintf("read in position chr=%s cind=%d fpos=%d, nm=%d, len=%d\n",chr.c_str(),cind,fpos,nm,len);
-      if(fcount>30) {
-	break;
-      }
-#endif
-      
+    }
+    fcount++;
+    (pos[cind]).push_back(fpos);
+    (posnm[cind]).push_back(nm);
+    if(read_names) {
+      (tagnames[cind]).push_back(string(fb[0],fe[0]-fb[0]));
     }
   }
 
@@ -2123,75 +2167,54 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<int> > posnm; // number of mismatches
 
   // chromosome map
-  unordered_map<string, int, hash<string>,equal_to<string> > cind_map;
-  vector<string> cnames;
-  
+  ChrIndex chrs;
+  vector<string>& cnames=chrs.cnames;
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { Rprintf("can't open input file \"",fname,"\"\n"); }
   else {
   Rprintf("opened %s\n",fname);
 
   // read in bed line
-  string line;
   int fcount=0;
-  while(get_a_line(f,line)) {
-
-#ifdef DEBUG  
-    Rprintf("line: %s\n",line.c_str());
-#endif
-
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string chr=*sit++;
-      string str_spos=*sit++;
-      string str_epos=*sit++;
-      sit++; 
-      string str_qual=*sit++;
-      string str_strand=*sit;
-
-      int fpos;
-      if(str_strand[0]=='+') {
-	fpos=atoi(str_spos.c_str());
-      } else {
-	fpos=-1*atoi(str_epos.c_str());
-      }
-      int nm=atoi(str_qual.c_str());
-      
-      // determine the chromosome index
-      unordered_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
-      int cind=-1;
-      if(li==cind_map.end()) {
-	// register new chromosome
-	cind=cnames.size();
-	cnames.push_back(chr);
-	cind_map[chr]=cind;
-	// allocate new pos vector
-	pos.push_back(vector<int>());
-	posnm.push_back(vector<int>());
-#ifdef DEBUG  
-	Rprintf("registered new chromosome %s with cind=%d, pos.size=%d\n",chr.c_str(),cind,pos.size());
-#endif
-      } else {
-	cind=li->second;
-      }
-      fcount++;
-      (pos[cind]).push_back(fpos);
-      (posnm[cind]).push_back(nm);
-#ifdef DEBUG  
-      Rprintf("read in position chr=%s cind=%d fpos=%d nm=%d\n",chr.c_str(),cind,fpos,nm);
-      if(fcount>30) {
-	break;
-      }
-#endif
-      
+  BlockLines lines(f);
+  char *line; size_t llen;
+  while(lines.next(&line,&llen)) {
+    char *end=line+llen;
+    char *p=line;
+    // fields 0..5 separated by runs of spaces and tabs; 0=chr 1=start 2=end 4=quality 5=strand
+    char *fb[6]; char *fe[6];
+    int nf=0;
+    while(nf<6) {
+      while(p<end && (*p==' ' || *p=='\t')) p++;
+      if(p>=end) break;
+      fb[nf]=p;
+      while(p<end && *p!=' ' && *p!='\t') p++;
+      fe[nf]=p;
+      nf++;
     }
+    if(nf==0) continue;
+    // missing trailing fields read as empty
+    for(int k=nf;k<6;k++) { fb[k]=end; fe[k]=end; }
+    for(int k=0;k<6;k++) { *fe[k]='\0'; }
+
+    int fpos;
+    if(*fb[5]=='+') {
+      fpos=atoi(fb[1]);
+    } else {
+      fpos=-1*atoi(fb[2]);
+    }
+    int nm=atoi(fb[4]);
+
+    bool is_new;
+    int cind=chrs.get(fb[0],fe[0]-fb[0],&is_new);
+    if(is_new) {
+      pos.push_back(vector<int>());
+      posnm.push_back(vector<int>());
+    }
+    fcount++;
+    (pos[cind]).push_back(fpos);
+    (posnm[cind]).push_back(nm);
   }
   fclose(f);
      
