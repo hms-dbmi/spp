@@ -6,7 +6,7 @@ Author: Peter K
 Date: 2018-07-19
 Depends: R (>= 3.3.0), Rcpp
 Imports: Rsamtools, caTools, parallel, graphics, stats
-Suggests: methods
+Suggests: methods, testthat (>= 3.0.0)
 LinkingTo: Rcpp, BH (>= 1.66)
 OS_type: unix
 Maintainer: Peter Kharchenko <spppackage.maintenance@gmail.com> 
